@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cube 3D</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f0f0;
+    }
+    
+    #container {
+      width: 600px;
+      height: 600px;
+      background-color: #ffffff;
+      border: 2px solid #ccc;
+      margin-bottom: 20px;
+    }
+    
+    #controls {
+      display: flex;
+      gap: 20px;
+    }
+    
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+    }
+    
+    button:active {
+      background-color: #3d8b40;
+    }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+  <div id="controls">
+    <button id="rotateLeftBtn">Rotate -90°</button>
+    <button id="rotateRightBtn">Rotate 90°</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    let scene, camera, renderer, checkerboard;
+    let isRotating = false;
+    let targetRotation = 0;
+    
+    function init() {
+      // Créer la scène
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xffffff);
+      
+      // Créer la caméra (vue en trois-quarts plongée avec face supérieure horizontale)
+      camera = new THREE.PerspectiveCamera(
+        50,
+        1,
+        0.1,
+        1000
+      );
+      camera.position.set(0, 8, 6);
+      camera.lookAt(0, 0, 0);
+      
+      // Créer le renderer
+      const container = document.getElementById('container');
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(600, 600);
+      container.appendChild(renderer.domElement);
+      
+      // Créer le damier 4x4
+      checkerboard = new THREE.Group();
+      const squareSize = 1;
+      
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 4; col++) {
+          const geometry = new THREE.BoxGeometry(squareSize, 0.2, squareSize);
+          
+          // Alterner les couleurs comme un damier
+          const isBlack = (row + col) % 2 === 0;
+          const material = new THREE.MeshBasicMaterial({ 
+            color: isBlack ? 0x000000 : 0xffffff
+          });
+          
+          const square = new THREE.Mesh(geometry, material);
+          
+          // Positionner chaque case
+          square.position.x = (col - 1.5) * squareSize;
+          square.position.z = (row - 1.5) * squareSize;
+          
+          // Ajouter des bordures
+          const edges = new THREE.EdgesGeometry(geometry);
+          const lineMaterial = new THREE.LineBasicMaterial({ color: 0x666666 });
+          const wireframe = new THREE.LineSegments(edges, lineMaterial);
+          square.add(wireframe);
+          
+          checkerboard.add(square);
+        }
+      }
+      
+      scene.add(checkerboard);
+      
+      targetRotation = checkerboard.rotation.y;
+      
+      animate();
+    }
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      // Animation de rotation progressive
+      if (isRotating) {
+        const diff = targetRotation - checkerboard.rotation.y;
+        if (Math.abs(diff) > 0.01) {
+          checkerboard.rotation.y += diff * 0.1;
+        } else {
+          checkerboard.rotation.y = targetRotation;
+          isRotating = false;
+        }
+      }
+      
+      renderer.render(scene, camera);
+    }
+    
+    // Gestionnaire des boutons
+    document.getElementById('rotateRightBtn').addEventListener('click', function() {
+      if (!isRotating) {
+        isRotating = true;
+        targetRotation += Math.PI / 2; // +90 degrés
+      }
+    });
+    
+    document.getElementById('rotateLeftBtn').addEventListener('click', function() {
+      if (!isRotating) {
+        isRotating = true;
+        targetRotation -= Math.PI / 2; // -90 degrés
+      }
+    });
+    
+    init();
+  </script>
+</body>
+</html>

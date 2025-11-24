@@ -13,6 +13,7 @@
       flex-direction: column;
       align-items: center;
       background-color: #f0f0f0;
+      position: relative;
     }
     
     #container {
@@ -21,6 +22,7 @@
       background-color: #ffffff;
       border: 2px solid #ccc;
       margin-bottom: 20px;
+      position: relative;
     }
     
     #controls {
@@ -46,20 +48,136 @@
     button:active {
       background-color: #3d8b40;
     }
+    
+    /* Croix directionnelle */
+    #dpad-container {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      width: 140px;
+      height: 140px;
+    }
+    
+    .dpad-button {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background-color: #555;
+      border: 2px solid #333;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      transition: background-color 0.2s, transform 0.1s;
+      transform: rotate(45deg);
+      user-select: none;
+    }
+    
+    .dpad-button:hover {
+      background-color: #666;
+    }
+    
+    .dpad-button:active {
+      background-color: #777;
+      transform: rotate(45deg) scale(0.95);
+    }
+    
+    .dpad-button span {
+      transform: rotate(-45deg);
+      display: block;
+    }
+    
+    #dpad-up {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+    }
+    
+    #dpad-right {
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+    }
+    
+    #dpad-down {
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+    }
+    
+    #dpad-left {
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+    }
+    
+    #dpad-center {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      background-color: #d35400;
+      border-color: #a04000;
+    }
+    
+    #dpad-center:hover {
+      background-color: #e67e22;
+    }
+    
+    #dpad-center:active {
+      background-color: #ca6f1e;
+      transform: translate(-50%, -50%) rotate(45deg) scale(0.95);
+    }
   </style>
 </head>
 <body>
-  <div id="container"></div>
+  <div id="container">
+    <!-- Croix directionnelle en X -->
+    <div id="dpad-container">
+      <div class="dpad-button" id="dpad-up">
+        <span>↑</span>
+      </div>
+      <div class="dpad-button" id="dpad-right">
+        <span>→</span>
+      </div>
+      <div class="dpad-button" id="dpad-down">
+        <span>↓</span>
+      </div>
+      <div class="dpad-button" id="dpad-left">
+        <span>←</span>
+      </div>
+      <div class="dpad-button" id="dpad-center">
+        <span>🔥</span>
+      </div>
+    </div>
+  </div>
   <div id="controls">
     <button id="rotateLeftBtn">Rotate -90°</button>
     <button id="rotateRightBtn">Rotate 90°</button>
+    <button id="zoomBtn">Zoom</button>
+    <button id="resetBtn">Recommencer</button>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     let scene, camera, renderer, checkerboard;
+    let pions = []; // Tableau pour stocker tous les pions
+    let redPion = null; // Référence au pion rouge
     let isRotating = false;
     let targetRotation = 0;
+    let isZoomed = false;
+    let isZooming = false;
+    let targetCameraPos = { x: 0, y: 12, z: 10 };
+    let targetCameraLookAt = { x: 0, y: 0, z: 0 };
+    const boardSize = 15;
+    const squareSize = 0.6;
+    const pionTypes = [
+      { color: '#ff0000', count: 1 },  // 1 pion rouge
+      { color: '#00ff00', count: 5 },  // 5 pions verts
+      { color: '#9900ff', count: 3 }   // 3 pions violets
+    ];
+    let roadPositions = []; // Liste des positions de routes (cases gris clair)
     
     function init() {
       // Créer la scène
@@ -73,34 +191,53 @@
         0.1,
         1000
       );
-      camera.position.set(0, 8, 6);
+      camera.position.set(0, 12, 10);
       camera.lookAt(0, 0, 0);
       
       // Créer le renderer
       const container = document.getElementById('container');
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(600, 600);
-      container.appendChild(renderer.domElement);
+      container.insertBefore(renderer.domElement, container.firstChild);
       
-      // Créer le damier 4x4
+      // Créer le damier 15x15
       checkerboard = new THREE.Group();
-      const squareSize = 1;
       
-      for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 4; col++) {
-          const geometry = new THREE.BoxGeometry(squareSize, 0.2, squareSize);
+      // Générer le réseau routier
+      const cityMap = generateCityMap();
+      roadPositions = [];
+      
+      // Ajouter les lieux dits
+      const landmarks = addLandmarks(cityMap);
+      
+      for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+          const geometry = new THREE.BoxGeometry(squareSize, 0.15, squareSize);
           
-          // Alterner les couleurs comme un damier
-          const isBlack = (row + col) % 2 === 0;
-          const material = new THREE.MeshBasicMaterial({ 
-            color: isBlack ? 0x000000 : 0xffffff
-          });
+          // Vérifier si c'est un landmark
+          const landmark = landmarks.find(l => l.row === row && l.col === col);
+          
+          let material;
+          if (landmark) {
+            // C'est un lieu dit
+            material = new THREE.MeshBasicMaterial({ color: landmark.color });
+          } else {
+            // Déterminer si c'est une route ou un bâtiment
+            const isRoad = cityMap[row][col];
+            material = new THREE.MeshBasicMaterial({ 
+              color: isRoad ? 0xcccccc : 0x444444 // Gris clair pour routes, gris foncé pour bâtiments
+            });
+            
+            if (isRoad) {
+              roadPositions.push({ row, col });
+            }
+          }
           
           const square = new THREE.Mesh(geometry, material);
           
           // Positionner chaque case
-          square.position.x = (col - 1.5) * squareSize;
-          square.position.z = (row - 1.5) * squareSize;
+          square.position.x = (col - (boardSize - 1) / 2) * squareSize;
+          square.position.z = (row - (boardSize - 1) / 2) * squareSize;
           
           // Ajouter des bordures
           const edges = new THREE.EdgesGeometry(geometry);
@@ -109,14 +246,475 @@
           square.add(wireframe);
           
           checkerboard.add(square);
+          
+          // Si c'est un landmark, ajouter un immeuble 3D
+          if (landmark) {
+            const building = createBuilding(landmark.type, squareSize);
+            building.position.x = (col - (boardSize - 1) / 2) * squareSize;
+            building.position.z = (row - (boardSize - 1) / 2) * squareSize;
+            checkerboard.add(building);
+          }
         }
       }
       
-      scene.add(checkerboard);
-      
+      // Rotation initiale à +45° pour présenter un coin face caméra
+      checkerboard.rotation.y = Math.PI / 4; // 45 degrés
       targetRotation = checkerboard.rotation.y;
       
+      scene.add(checkerboard);
+      
+      // Créer tous les pions
+      createAllPions();
+      
       animate();
+    }
+    
+    function generateCityMap() {
+      // Créer une grille initiale remplie de bâtiments (false)
+      const map = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
+      
+      // Liste de toutes les positions des routes
+      const roadCells = [];
+      
+      // Commencer au centre
+      let currentRow = Math.floor(boardSize / 2);
+      let currentCol = Math.floor(boardSize / 2);
+      map[currentRow][currentCol] = true;
+      roadCells.push({ row: currentRow, col: currentCol });
+      
+      const numSegments = 18 + Math.floor(Math.random() * 8); // 18-25 tronçons pour mieux couvrir
+      
+      for (let segment = 0; segment < numSegments; segment++) {
+        // Choisir un point de départ parmi les routes existantes
+        const startPoint = roadCells[Math.floor(Math.random() * roadCells.length)];
+        currentRow = startPoint.row;
+        currentCol = startPoint.col;
+        
+        // Choisir une direction aléatoire (0: haut, 1: droite, 2: bas, 3: gauche)
+        const direction = Math.floor(Math.random() * 4);
+        // Longueur du tronçon (minimum 3 cases, maximum 6 cases)
+        const length = 3 + Math.floor(Math.random() * 4);
+        
+        let deltaRow = 0, deltaCol = 0;
+        if (direction === 0) deltaRow = -1; // Haut
+        else if (direction === 1) deltaCol = 1; // Droite
+        else if (direction === 2) deltaRow = 1; // Bas
+        else if (direction === 3) deltaCol = -1; // Gauche
+        
+        // Vérifier si le tronçon peut être créé sans violer les règles
+        let canCreate = true;
+        let tempRow = currentRow;
+        let tempCol = currentCol;
+        const newCells = [];
+        
+        for (let step = 0; step < length; step++) {
+          tempRow += deltaRow;
+          tempCol += deltaCol;
+          
+          // Vérifier les limites
+          if (tempRow < 0 || tempRow >= boardSize || 
+              tempCol < 0 || tempCol >= boardSize) {
+            canCreate = false;
+            break;
+          }
+          
+          newCells.push({ row: tempRow, col: tempCol });
+          
+          // Vérifier qu'il n'y a pas de tronçons parallèles collés
+          if (!canCreate) break;
+          
+          // Pour un tronçon horizontal (direction gauche/droite)
+          if (direction === 1 || direction === 3) {
+            // Vérifier au-dessus et en-dessous
+            if (tempRow > 0 && map[tempRow - 1][tempCol] && !map[tempRow][tempCol]) {
+              // Vérifier si c'est un tronçon horizontal parallèle
+              if ((tempCol > 0 && map[tempRow - 1][tempCol - 1]) || 
+                  (tempCol < boardSize - 1 && map[tempRow - 1][tempCol + 1])) {
+                canCreate = false;
+                break;
+              }
+            }
+            if (tempRow < boardSize - 1 && map[tempRow + 1][tempCol] && !map[tempRow][tempCol]) {
+              // Vérifier si c'est un tronçon horizontal parallèle
+              if ((tempCol > 0 && map[tempRow + 1][tempCol - 1]) || 
+                  (tempCol < boardSize - 1 && map[tempRow + 1][tempCol + 1])) {
+                canCreate = false;
+                break;
+              }
+            }
+          }
+          
+          // Pour un tronçon vertical (direction haut/bas)
+          if (direction === 0 || direction === 2) {
+            // Vérifier à gauche et à droite
+            if (tempCol > 0 && map[tempRow][tempCol - 1] && !map[tempRow][tempCol]) {
+              // Vérifier si c'est un tronçon vertical parallèle
+              if ((tempRow > 0 && map[tempRow - 1][tempCol - 1]) || 
+                  (tempRow < boardSize - 1 && map[tempRow + 1][tempCol - 1])) {
+                canCreate = false;
+                break;
+              }
+            }
+            if (tempCol < boardSize - 1 && map[tempRow][tempCol + 1] && !map[tempRow][tempCol]) {
+              // Vérifier si c'est un tronçon vertical parallèle
+              if ((tempRow > 0 && map[tempRow - 1][tempCol + 1]) || 
+                  (tempRow < boardSize - 1 && map[tempRow + 1][tempCol + 1])) {
+                canCreate = false;
+                break;
+              }
+            }
+          }
+        }
+        
+        // Créer le tronçon seulement s'il est valide
+        if (canCreate) {
+          for (const cell of newCells) {
+            if (!map[cell.row][cell.col]) {
+              map[cell.row][cell.col] = true;
+              roadCells.push(cell);
+            }
+          }
+        }
+      }
+      
+      // S'assurer que chaque zone 4x4 contient au moins une route
+      for (let blockRow = 0; blockRow < boardSize - 3; blockRow += 4) {
+        for (let blockCol = 0; blockCol < boardSize - 3; blockCol += 4) {
+          let hasRoad = false;
+          
+          // Vérifier si ce bloc 4x4 a au moins une route
+          for (let r = blockRow; r < Math.min(blockRow + 4, boardSize); r++) {
+            for (let c = blockCol; c < Math.min(blockCol + 4, boardSize); c++) {
+              if (map[r][c]) {
+                hasRoad = true;
+                break;
+              }
+            }
+            if (hasRoad) break;
+          }
+          
+          // Si pas de route, en créer une connectée au réseau le plus proche
+          if (!hasRoad && roadCells.length > 0) {
+            // Trouver la route la plus proche de ce bloc
+            let closestRoad = null;
+            let minDistance = Infinity;
+            
+            const blockCenterRow = blockRow + 1.5;
+            const blockCenterCol = blockCol + 1.5;
+            
+            for (const road of roadCells) {
+              const dist = Math.abs(road.row - blockCenterRow) + Math.abs(road.col - blockCenterCol);
+              if (dist < minDistance) {
+                minDistance = dist;
+                closestRoad = road;
+              }
+            }
+            
+            // Créer un chemin depuis la route la plus proche vers ce bloc
+            if (closestRoad) {
+              let pathRow = closestRoad.row;
+              let pathCol = closestRoad.col;
+              const targetRow = Math.floor(blockCenterRow);
+              const targetCol = Math.floor(blockCenterCol);
+              
+              // Créer un chemin simple (Manhattan)
+              while (pathRow !== targetRow || pathCol !== targetCol) {
+                if (pathRow < targetRow) pathRow++;
+                else if (pathRow > targetRow) pathRow--;
+                else if (pathCol < targetCol) pathCol++;
+                else if (pathCol > targetCol) pathCol--;
+                
+                if (pathRow >= 0 && pathRow < boardSize && pathCol >= 0 && pathCol < boardSize) {
+                  if (!map[pathRow][pathCol]) {
+                    map[pathRow][pathCol] = true;
+                    roadCells.push({ row: pathRow, col: pathCol });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      return map;
+    }
+    
+    function addLandmarks(map) {
+      // Ajouter des lieux dits : 8 rouges, 1 bleu, 1 vert
+      const landmarks = [];
+      const landmarkTypes = [
+        { color: 0x8B0000, count: 8, type: 'red' },   // 8 cases rouge sombre
+        { color: 0x00008B, count: 1, type: 'blue' },  // 1 case bleu sombre
+        { color: 0x006400, count: 1, type: 'green' }  // 1 case vert sombre
+      ];
+      
+      // Créer un tableau pour marquer les positions des landmarks
+      const landmarkMap = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
+      
+      for (const landmarkType of landmarkTypes) {
+        for (let i = 0; i < landmarkType.count; i++) {
+          let placed = false;
+          let attempts = 0;
+          
+          while (!placed && attempts < 500) {
+            attempts++;
+            const row = Math.floor(Math.random() * boardSize);
+            const col = Math.floor(Math.random() * boardSize);
+            
+            // Vérifier que c'est un bâtiment (pas une route)
+            if (map[row][col] || landmarkMap[row][col]) continue;
+            
+            // Vérifier qu'il y a au moins une route adjacente
+            let hasAdjacentRoad = false;
+            if (row > 0 && map[row - 1][col]) hasAdjacentRoad = true;
+            if (row < boardSize - 1 && map[row + 1][col]) hasAdjacentRoad = true;
+            if (col > 0 && map[row][col - 1]) hasAdjacentRoad = true;
+            if (col < boardSize - 1 && map[row][col + 1]) hasAdjacentRoad = true;
+            
+            if (!hasAdjacentRoad) continue;
+            
+            // Vérifier qu'aucun autre landmark n'est adjacent
+            let hasAdjacentLandmark = false;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                if (dr === 0 && dc === 0) continue;
+                const nr = row + dr;
+                const nc = col + dc;
+                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                  if (landmarkMap[nr][nc]) {
+                    hasAdjacentLandmark = true;
+                    break;
+                  }
+                }
+              }
+              if (hasAdjacentLandmark) break;
+            }
+            
+            if (hasAdjacentLandmark) continue;
+            
+            // Placer le landmark
+            landmarkMap[row][col] = true;
+            landmarks.push({ row, col, color: landmarkType.color, type: landmarkType.type });
+            placed = true;
+          }
+        }
+      }
+      
+      return landmarks;
+    }
+    
+    function createBuilding(type, size) {
+      // Créer un groupe pour l'immeuble
+      const building = new THREE.Group();
+      
+      // Déterminer la couleur pastel et le nombre d'étages selon le type
+      let color, floors;
+      if (type === 'red') {
+        color = 0xffb3ba; // Rose pastel
+        floors = Math.random() < 0.5 ? 2 : 3; // 2 ou 3 étages
+      } else if (type === 'blue') {
+        color = 0xbae1ff; // Bleu pastel
+        floors = 3;
+      } else { // green
+        color = 0xbaffc9; // Vert pastel
+        floors = 3;
+      }
+      
+      // Créer les étages (cubes empilés)
+      for (let i = 0; i < floors; i++) {
+        const floorGeometry = new THREE.BoxGeometry(size, size, size);
+        const floorMaterial = new THREE.MeshBasicMaterial({ color: color });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        
+        // Positionner chaque étage
+        floor.position.y = 0.15 + size / 2 + i * size;
+        
+        // Ajouter des arêtes pour mieux voir la structure
+        const edges = new THREE.EdgesGeometry(floorGeometry);
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x666666 });
+        const wireframe = new THREE.LineSegments(edges, lineMaterial);
+        floor.add(wireframe);
+        
+        building.add(floor);
+      }
+      
+      // Ajouter un toit biseauté sur le dernier étage
+      const roofHeight = size * 0.3;
+      const roofGeometry = createBeveledRoofGeometry(size, roofHeight);
+      const roofMaterial = new THREE.MeshBasicMaterial({ color: color });
+      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+      
+      // Positionner le toit au-dessus du dernier étage
+      roof.position.y = 0.15 + floors * size;
+      
+      // Ajouter des arêtes au toit
+      const roofEdges = new THREE.EdgesGeometry(roofGeometry);
+      const roofLineMaterial = new THREE.LineBasicMaterial({ color: 0x444444 });
+      const roofWireframe = new THREE.LineSegments(roofEdges, roofLineMaterial);
+      roof.add(roofWireframe);
+      
+      building.add(roof);
+      
+      return building;
+    }
+    
+    function createBeveledRoofGeometry(size, height) {
+      // Créer un toit biseauté (pyramide tronquée sur une face)
+      const shape = new THREE.Shape();
+      
+      // Base du toit (carré)
+      const halfSize = size / 2;
+      
+      // Créer une géométrie personnalisée pour le toit biseauté
+      const geometry = new THREE.BufferGeometry();
+      
+      // Définir les sommets
+      const vertices = new Float32Array([
+        // Base (y = 0)
+        -halfSize, 0, -halfSize,  // 0
+        halfSize, 0, -halfSize,   // 1
+        halfSize, 0, halfSize,    // 2
+        -halfSize, 0, halfSize,   // 3
+        
+        // Sommet biseauté (y = height, décalé vers l'avant)
+        -halfSize * 0.3, height, -halfSize * 0.3,  // 4
+        halfSize * 0.3, height, -halfSize * 0.3,   // 5
+        halfSize * 0.3, height, halfSize * 0.3,    // 6
+        -halfSize * 0.3, height, halfSize * 0.3    // 7
+      ]);
+      
+      // Définir les faces (triangles)
+      const indices = [
+        // Base
+        0, 2, 1,  0, 3, 2,
+        
+        // Côtés
+        0, 1, 5,  0, 5, 4,  // Face avant
+        1, 2, 6,  1, 6, 5,  // Face droite
+        2, 3, 7,  2, 7, 6,  // Face arrière
+        3, 0, 4,  3, 4, 7,  // Face gauche
+        
+        // Sommet
+        4, 5, 6,  4, 6, 7
+      ];
+      
+      geometry.setIndex(indices);
+      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      geometry.computeVertexNormals();
+      
+      return geometry;
+    }
+    
+    function createPionTexture(color) {
+      // Créer une texture pour un pion d'une couleur donnée
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 170;
+      const ctx = canvas.getContext('2d');
+      
+      // Fond transparent
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Dessiner un pion simple (cercle + base)
+      // Positionner pour que le bas de l'image soit le point d'ancrage
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(64, 50, 40, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Base plus foncée
+      const darkColor = shadeColor(color, -30);
+      ctx.fillStyle = darkColor;
+      ctx.fillRect(50, 90, 28, 60);
+      ctx.beginPath();
+      ctx.ellipse(64, 150, 25, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      
+      return new THREE.CanvasTexture(canvas);
+    }
+    
+    function shadeColor(color, percent) {
+      // Fonction pour assombrir une couleur
+      const num = parseInt(color.replace("#",""), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = (num >> 16) + amt;
+      const G = (num >> 8 & 0x00FF) + amt;
+      const B = (num & 0x0000FF) + amt;
+      return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 +
+        (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255))
+        .toString(16).slice(1);
+    }
+    
+    function createAllPions() {
+      // Supprimer tous les anciens pions
+      pions.forEach(p => checkerboard.remove(p));
+      pions = [];
+      redPion = null;
+      
+      // Créer un ensemble pour suivre les cases occupées
+      const occupiedPositions = new Set();
+      
+      // S'assurer qu'il y a assez de routes pour tous les pions
+      if (roadPositions.length < 9) {
+        console.error("Pas assez de routes pour placer tous les pions!");
+        return;
+      }
+      
+      // Créer chaque type de pion
+      pionTypes.forEach((type, typeIndex) => {
+        for (let i = 0; i < type.count; i++) {
+          // Trouver une position aléatoire libre sur une route
+          let roadIndex, position, posKey;
+          let attempts = 0;
+          do {
+            roadIndex = Math.floor(Math.random() * roadPositions.length);
+            position = roadPositions[roadIndex];
+            posKey = `${position.row}-${position.col}`;
+            attempts++;
+            if (attempts > 1000) {
+              console.error("Impossible de trouver une position libre!");
+              return;
+            }
+          } while (occupiedPositions.has(posKey));
+          
+          occupiedPositions.add(posKey);
+          
+          // Créer le pion
+          const texture = createPionTexture(type.color);
+          const material = new THREE.SpriteMaterial({ 
+            map: texture,
+            transparent: true
+          });
+          
+          const pion = new THREE.Sprite(material);
+          const pionScale = isZoomed ? squareSize * 2 : squareSize * 0.8;
+          const pionHeight = isZoomed ? squareSize * 2.5 : squareSize * 1.1;
+          pion.scale.set(pionScale, pionHeight, 1);
+          
+          // Positionner le pion sur la case
+          // Le centre du bas de l'image doit être au centre de la case
+          const x = (position.col - (boardSize - 1) / 2) * squareSize;
+          const z = (position.row - (boardSize - 1) / 2) * squareSize;
+          // Décalage vertical : la moitié de la hauteur du sprite pour que le bas soit sur la case
+          pion.position.set(x, pionHeight / 2, z);
+          
+          // Stocker les coordonnées du pion et sa position de base
+          pion.userData = { 
+            row: position.row, 
+            col: position.col,
+            baseX: x,
+            baseZ: z
+          };
+          
+          checkerboard.add(pion);
+          pions.push(pion);
+          
+          // Garder une référence au pion rouge (premier pion du premier type)
+          if (typeIndex === 0 && i === 0) {
+            redPion = pion;
+          }
+        }
+      });
     }
     
     function animate() {
@@ -127,9 +725,74 @@
         const diff = targetRotation - checkerboard.rotation.y;
         if (Math.abs(diff) > 0.01) {
           checkerboard.rotation.y += diff * 0.1;
+          
+          // Si on est zoomé, mettre à jour la position de la caméra pour suivre le pion rouge
+          if (isZoomed && redPion) {
+            const redPionWorldPos = new THREE.Vector3();
+            redPion.getWorldPosition(redPionWorldPos);
+            
+            targetCameraPos = {
+              x: redPionWorldPos.x,
+              y: 3,
+              z: redPionWorldPos.z + 2.5
+            };
+            targetCameraLookAt = {
+              x: redPionWorldPos.x,
+              y: 0,
+              z: redPionWorldPos.z
+            };
+            
+            camera.position.set(targetCameraPos.x, targetCameraPos.y, targetCameraPos.z);
+            camera.lookAt(targetCameraLookAt.x, targetCameraLookAt.y, targetCameraLookAt.z);
+          }
         } else {
           checkerboard.rotation.y = targetRotation;
           isRotating = false;
+        }
+      }
+      
+      // Animation de zoom progressive
+      if (isZooming) {
+        const posXDiff = targetCameraPos.x - camera.position.x;
+        const posYDiff = targetCameraPos.y - camera.position.y;
+        const posZDiff = targetCameraPos.z - camera.position.z;
+        
+        if (Math.abs(posXDiff) > 0.01 || Math.abs(posYDiff) > 0.01 || Math.abs(posZDiff) > 0.01) {
+          camera.position.x += posXDiff * 0.1;
+          camera.position.y += posYDiff * 0.1;
+          camera.position.z += posZDiff * 0.1;
+          
+          // Mettre à jour la cible de la caméra
+          const lookAtX = targetCameraLookAt.x;
+          const lookAtY = targetCameraLookAt.y;
+          const lookAtZ = targetCameraLookAt.z;
+          camera.lookAt(lookAtX, lookAtY, lookAtZ);
+          
+          // Mettre à jour la taille des pions progressivement
+          const zoomProgress = isZoomed ? 
+            1 - Math.abs(posYDiff) / (12 - 3) : 
+            Math.abs(posYDiff) / (12 - 3);
+          const pionScale = squareSize * (0.8 + zoomProgress * 1.2);
+          const pionHeight = squareSize * (1.1 + zoomProgress * 1.4);
+          
+          pions.forEach(p => {
+            p.scale.set(pionScale, pionHeight, 1);
+            // Maintenir le pion ancré au centre de sa case
+            p.position.y = pionHeight / 2;
+          });
+        } else {
+          camera.position.set(targetCameraPos.x, targetCameraPos.y, targetCameraPos.z);
+          camera.lookAt(targetCameraLookAt.x, targetCameraLookAt.y, targetCameraLookAt.z);
+          isZooming = false;
+          
+          // Fixer la taille finale des pions
+          const finalPionScale = isZoomed ? squareSize * 2 : squareSize * 0.8;
+          const finalPionHeight = isZoomed ? squareSize * 2.5 : squareSize * 1.1;
+          pions.forEach(p => {
+            p.scale.set(finalPionScale, finalPionHeight, 1);
+            // Maintenir le pion ancré au centre de sa case
+            p.position.y = finalPionHeight / 2;
+          });
         }
       }
       
@@ -149,6 +812,138 @@
         isRotating = true;
         targetRotation -= Math.PI / 2; // -90 degrés
       }
+    });
+    
+    document.getElementById('zoomBtn').addEventListener('click', function() {
+      if (!isZooming && redPion) {
+        isZooming = true;
+        isZoomed = !isZoomed;
+        
+        if (isZoomed) {
+          // Vue rapprochée : centrer sur le pion rouge
+          const redPionWorldPos = new THREE.Vector3();
+          redPion.getWorldPosition(redPionWorldPos);
+          
+          // Caméra plus proche et plus horizontale
+          targetCameraPos = {
+            x: redPionWorldPos.x,
+            y: 3,  // Beaucoup plus bas qu'avant (était 12)
+            z: redPionWorldPos.z + 2.5  // Plus proche
+          };
+          targetCameraLookAt = {
+            x: redPionWorldPos.x,
+            y: 0,
+            z: redPionWorldPos.z
+          };
+          
+          this.textContent = 'UnZoom';
+        } else {
+          // Vue générale
+          targetCameraPos = { x: 0, y: 12, z: 10 };
+          targetCameraLookAt = { x: 0, y: 0, z: 0 };
+          
+          this.textContent = 'Zoom';
+        }
+      }
+    });
+    
+    document.getElementById('resetBtn').addEventListener('click', function() {
+      // Régénérer le réseau routier
+      checkerboard.clear();
+      
+      // Régénérer le damier avec un nouveau plan
+      const cityMap = generateCityMap();
+      roadPositions = [];
+      
+      // Ajouter les lieux dits
+      const landmarks = addLandmarks(cityMap);
+      
+      for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+          const geometry = new THREE.BoxGeometry(squareSize, 0.15, squareSize);
+          
+          // Vérifier si c'est un landmark
+          const landmark = landmarks.find(l => l.row === row && l.col === col);
+          
+          let material;
+          if (landmark) {
+            // C'est un lieu dit
+            material = new THREE.MeshBasicMaterial({ color: landmark.color });
+          } else {
+            // Déterminer si c'est une route ou un bâtiment
+            const isRoad = cityMap[row][col];
+            material = new THREE.MeshBasicMaterial({ 
+              color: isRoad ? 0xcccccc : 0x444444
+            });
+            
+            if (isRoad) {
+              roadPositions.push({ row, col });
+            }
+          }
+          
+          const square = new THREE.Mesh(geometry, material);
+          
+          // Positionner chaque case
+          square.position.x = (col - (boardSize - 1) / 2) * squareSize;
+          square.position.z = (row - (boardSize - 1) / 2) * squareSize;
+          
+          // Ajouter des bordures
+          const edges = new THREE.EdgesGeometry(geometry);
+          const lineMaterial = new THREE.LineBasicMaterial({ color: 0x666666 });
+          const wireframe = new THREE.LineSegments(edges, lineMaterial);
+          square.add(wireframe);
+          
+          checkerboard.add(square);
+          
+          // Si c'est un landmark, ajouter un immeuble 3D
+          if (landmark) {
+            const building = createBuilding(landmark.type, squareSize);
+            building.position.x = (col - (boardSize - 1) / 2) * squareSize;
+            building.position.z = (row - (boardSize - 1) / 2) * squareSize;
+            checkerboard.add(building);
+          }
+        }
+      }
+      
+      // Créer les nouveaux pions
+      createAllPions();
+      
+      // Réinitialiser le zoom si on était zoomé
+      if (isZoomed) {
+        isZoomed = false;
+        isZooming = false;
+        camera.position.set(0, 12, 10);
+        camera.lookAt(0, 0, 0);
+        targetCameraPos = { x: 0, y: 12, z: 10 };
+        targetCameraLookAt = { x: 0, y: 0, z: 0 };
+        document.getElementById('zoomBtn').textContent = 'Zoom';
+      }
+    });
+    
+    // Gestionnaires pour la croix directionnelle (à implémenter plus tard)
+    document.getElementById('dpad-up').addEventListener('click', function() {
+      console.log('Direction: Haut-Droite (diagonale)');
+      // Fonction à ajouter plus tard
+    });
+    
+    document.getElementById('dpad-right').addEventListener('click', function() {
+      console.log('Direction: Bas-Droite (diagonale)');
+      // Fonction à ajouter plus tard
+    });
+    
+    document.getElementById('dpad-down').addEventListener('click', function() {
+      console.log('Direction: Bas-Gauche (diagonale)');
+      // Fonction à ajouter plus tard
+    });
+    
+    document.getElementById('dpad-left').addEventListener('click', function() {
+      console.log('Direction: Haut-Gauche (diagonale)');
+      // Fonction à ajouter plus tard
+    });
+    
+    document.getElementById('dpad-center').addEventListener('click', function() {
+      console.log('Action: Flamme centrale');
+      // Fonction à ajouter plus tard
     });
     
     init();

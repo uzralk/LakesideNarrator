@@ -71,7 +71,7 @@
       font-size: 24px;
       color: white;
       transition: background-color 0.2s, transform 0.1s;
-      transform: rotate(45deg);
+      transform: rotate(0deg);
       user-select: none;
     }
     
@@ -81,36 +81,36 @@
     
     .dpad-button:active {
       background-color: #777;
-      transform: rotate(45deg) scale(0.95);
+      transform: rotate(0deg) scale(0.95);
     }
     
     .dpad-button span {
-      transform: rotate(-45deg);
+      transform: rotate(0deg);
       display: block;
     }
     
-    #dpad-up {
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%) rotate(45deg);
+    #dpad-UR {
+      top: 7%;
+      left: 7%;
+      transform: translate(0%, 0%) rotate(0deg);
     }
     
-    #dpad-right {
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%) rotate(45deg);
+    #dpad-BR {
+      top: 7%;
+      right: 7%;
+      transform: translate(0%, 0%)  rotate(0deg);
     }
     
-    #dpad-down {
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%) rotate(45deg);
+    #dpad-UL {
+      bottom: 7%;
+      left: 7%;
+      transform: translateX(0%, 0%)  rotate(0deg);
     }
     
-    #dpad-left {
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%) rotate(45deg);
+    #dpad-BL {
+      bottom: 7%;
+      right: 7%;
+      transform: translate(0%, 0%)  rotate(0deg);
     }
     
     #dpad-center {
@@ -129,23 +129,71 @@
       background-color: #ca6f1e;
       transform: translate(-50%, -50%) rotate(45deg) scale(0.95);
     }
+    
+    /* Volet de confrontation */
+    #confrontation-panel {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 100%;
+      height: 100%;
+      background-image: url('background-image.png');
+      background-size: cover;
+      background-position: center;
+      background-color: #2c3e50;
+      transition: right 0.5s ease-in-out;
+      z-index: 1000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 30px;
+    }
+    
+    #confrontation-panel.active {
+      right: 0;
+    }
+    
+    #close-confrontation-btn {
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    #close-confrontation-btn:hover {
+      background-color: #c0392b;
+    }
+    
+    #close-confrontation-btn:active {
+      background-color: #a93226;
+    }
   </style>
 </head>
 <body>
+  <!-- Volet de confrontation -->
+  <div id="confrontation-panel">
+    <button id="close-confrontation-btn">Refermer</button>
+  </div>
+  
   <div id="container">
     <!-- Croix directionnelle en X -->
     <div id="dpad-container">
-      <div class="dpad-button" id="dpad-up">
-        <span>↑</span>
+      <div class="dpad-button" id="dpad-UR">
+        <span>⇖</span>
       </div>
-      <div class="dpad-button" id="dpad-right">
-        <span>→</span>
+      <div class="dpad-button" id="dpad-BR">
+        <span>⇗</span>
       </div>
-      <div class="dpad-button" id="dpad-down">
-        <span>↓</span>
+      <div class="dpad-button" id="dpad-BL">
+        <span>⇘</span>
       </div>
-      <div class="dpad-button" id="dpad-left">
-        <span>←</span>
+      <div class="dpad-button" id="dpad-UL">
+        <span>⇙</span>
       </div>
       <div class="dpad-button" id="dpad-center">
         <span>🔥</span>
@@ -178,6 +226,12 @@
       { color: '#9900ff', count: 3 }   // 3 pions violets
     ];
     let roadPositions = []; // Liste des positions de routes (cases gris clair)
+    let cityMap = []; // Carte de la ville
+    let squareMeshes = {}; // Dictionnaire pour accéder aux meshes des cases
+    let accessibleCells = []; // Cases accessibles au pion rouge
+    let isPlayerTurn = true; // Tour du joueur
+    let confrontedPion = null; // Pion qui a déclenché la confrontation
+    const moveRange = 3; // Range de déplacement
     
     function init() {
       // Créer la scène
@@ -204,8 +258,9 @@
       checkerboard = new THREE.Group();
       
       // Générer le réseau routier
-      const cityMap = generateCityMap();
+      cityMap = generateCityMap();
       roadPositions = [];
+      squareMeshes = {};
       
       // Ajouter les lieux dits
       const landmarks = addLandmarks(cityMap);
@@ -239,6 +294,10 @@
           square.position.x = (col - (boardSize - 1) / 2) * squareSize;
           square.position.z = (row - (boardSize - 1) / 2) * squareSize;
           
+          // Stocker le mesh pour pouvoir le modifier plus tard
+          square.userData = { row, col, originalColor: material.color.getHex(), isRoad: cityMap[row][col] };
+          squareMeshes[`${row}-${col}`] = square;
+          
           // Ajouter des bordures
           const edges = new THREE.EdgesGeometry(geometry);
           const lineMaterial = new THREE.LineBasicMaterial({ color: 0x666666 });
@@ -265,6 +324,9 @@
       
       // Créer tous les pions
       createAllPions();
+      
+      // Démarrer le tour du joueur
+      startPlayerTurn();
       
       animate();
     }
@@ -605,6 +667,229 @@
       return geometry;
     }
     
+    function calculateAccessibleCells(fromRow, fromCol, range) {
+      // Calculer les cases accessibles depuis une position donnée avec un range
+      const accessible = [];
+      const visited = new Set();
+      const queue = [{ row: fromRow, col: fromCol, distance: 0 }];
+      
+      visited.add(`${fromRow}-${fromCol}`);
+      
+      // Ajouter la case de départ comme accessible (distance 0)
+      accessible.push({ row: fromRow, col: fromCol, distance: 0 });
+      
+      while (queue.length > 0) {
+        const current = queue.shift();
+        
+        if (current.distance >= range) continue;
+        
+        // Vérifier les 4 directions (haut, bas, gauche, droite)
+        const directions = [
+          { dr: -1, dc: 0 },  // Haut
+          { dr: 1, dc: 0 },   // Bas
+          { dr: 0, dc: -1 },  // Gauche
+          { dr: 0, dc: 1 }    // Droite
+        ];
+        
+        for (const dir of directions) {
+          const newRow = current.row + dir.dr;
+          const newCol = current.col + dir.dc;
+          const key = `${newRow}-${newCol}`;
+          
+          // Vérifier les limites et si la case est une route
+          if (newRow >= 0 && newRow < boardSize && 
+              newCol >= 0 && newCol < boardSize && 
+              cityMap[newRow][newCol] && 
+              !visited.has(key)) {
+            
+            visited.add(key);
+            
+            // Vérifier si la case n'est pas occupée par un autre pion
+            const isOccupied = pions.some(p => 
+              p !== redPion && p.userData.row === newRow && p.userData.col === newCol
+            );
+            
+            if (!isOccupied) {
+              accessible.push({ row: newRow, col: newCol, distance: current.distance + 1 });
+              queue.push({ row: newRow, col: newCol, distance: current.distance + 1 });
+            }
+          }
+        }
+      }
+      
+      return accessible;
+    }
+    
+    function highlightAccessibleCells() {
+      // Retirer la surbrillance de toutes les cases
+      clearHighlights();
+      
+      if (!redPion) return;
+      
+      // Calculer les cases accessibles
+      accessibleCells = calculateAccessibleCells(
+        redPion.userData.row, 
+        redPion.userData.col, 
+        moveRange
+      );
+      
+      // Mettre en surbrillance les cases accessibles
+      accessibleCells.forEach(cell => {
+        const key = `${cell.row}-${cell.col}`;
+        const square = squareMeshes[key];
+        if (square) {
+          square.material.color.setHex(0xffff99); // Jaune clair
+        }
+      });
+    }
+    
+    function clearHighlights() {
+      // Restaurer la couleur originale de toutes les cases
+      for (const key in squareMeshes) {
+        const square = squareMeshes[key];
+        square.material.color.setHex(square.userData.originalColor);
+      }
+    }
+    
+    function startPlayerTurn() {
+      isPlayerTurn = true;
+      highlightAccessibleCells();
+      console.log("Tour du joueur - Déplacez-vous dans les cases surlignées, puis appuyez sur la flamme");
+    }
+    
+    function endPlayerTurn() {
+      isPlayerTurn = false;
+      clearHighlights();
+      console.log("Tour de l'adversaire");
+      
+      // Vérifier s'il y a un pion adverse adjacent au pion rouge
+      if (isEnemyAdjacentToRedPion()) {
+        // Déclencher la phase de confrontation
+        openConfrontation();
+      } else {
+        // Continuer directement le tour de l'adversaire
+        setTimeout(() => {
+          aiTurn();
+        }, 500);
+      }
+    }
+    
+    function isEnemyAdjacentToRedPion() {
+      if (!redPion) return false;
+      
+      const redRow = redPion.userData.row;
+      const redCol = redPion.userData.col;
+      
+      // Vérifier les 4 cases adjacentes (haut, bas, gauche, droite)
+      const adjacentPositions = [
+        { row: redRow - 1, col: redCol },     // Haut
+        { row: redRow + 1, col: redCol },     // Bas
+        { row: redRow, col: redCol - 1 },     // Gauche
+        { row: redRow, col: redCol + 1 }      // Droite
+      ];
+      
+      // Vérifier si un pion adverse (pas le rouge) est sur une case adjacente
+      for (const pos of adjacentPositions) {
+        const enemyOnCell = pions.find(p => 
+          p !== redPion && 
+          p.userData.row === pos.row && 
+          p.userData.col === pos.col
+        );
+        
+        if (enemyOnCell) {
+          console.log("Pion adverse adjacent détecté - Confrontation déclenchée!");
+          confrontedPion = enemyOnCell; // Mémoriser le pion confronté
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    function openConfrontation() {
+      const panel = document.getElementById('confrontation-panel');
+      panel.classList.add('active');
+      console.log("Phase Confrontation déclenchée");
+    }
+    
+    function closeConfrontation() {
+      const panel = document.getElementById('confrontation-panel');
+      panel.classList.remove('active');
+      console.log("Phase Confrontation terminée");
+      
+      // Replacer le pion confronté ailleurs sur l'échiquier
+      if (confrontedPion) {
+        relocateConfrontedPion(confrontedPion);
+        confrontedPion = null; // Réinitialiser
+      }
+      
+      // Continuer le tour de l'adversaire après la fermeture
+      setTimeout(() => {
+        aiTurn();
+      }, 500);
+    }
+    
+    function relocateConfrontedPion(pion) {
+      // Trouver une case route libre (non occupée par un autre pion)
+      const freeCells = roadPositions.filter(road => {
+        // Vérifier qu'aucun pion n'occupe cette case
+        const isOccupied = pions.some(p => 
+          p.userData.row === road.row && p.userData.col === road.col
+        );
+        return !isOccupied;
+      });
+      
+      if (freeCells.length > 0) {
+        // Choisir une case aléatoire parmi les cases libres
+        const newCell = freeCells[Math.floor(Math.random() * freeCells.length)];
+        movePion(pion, newCell.row, newCell.col);
+        console.log(`Pion confronté replacé à la position (${newCell.row}, ${newCell.col})`);
+      } else {
+        console.log("Aucune case libre disponible pour replacer le pion confronté");
+      }
+    }
+    
+    function aiTurn() {
+      // L'IA choisit un pion au hasard (pas le rouge) et le déplace
+      const aiPions = pions.filter(p => p !== redPion);
+      if (aiPions.length === 0) {
+        startPlayerTurn();
+        return;
+      }
+      
+      const selectedPion = aiPions[Math.floor(Math.random() * aiPions.length)];
+      const aiAccessible = calculateAccessibleCells(
+        selectedPion.userData.row,
+        selectedPion.userData.col,
+        moveRange
+      );
+      
+      if (aiAccessible.length > 0) {
+        const targetCell = aiAccessible[Math.floor(Math.random() * aiAccessible.length)];
+        movePion(selectedPion, targetCell.row, targetCell.col);
+      }
+      
+      // Retour au tour du joueur
+      setTimeout(() => {
+        startPlayerTurn();
+      }, 500);
+    }
+    
+    function movePion(pion, toRow, toCol) {
+      // Déplacer un pion vers une nouvelle case
+      pion.userData.row = toRow;
+      pion.userData.col = toCol;
+      
+      const x = (toCol - (boardSize - 1) / 2) * squareSize;
+      const z = (toRow - (boardSize - 1) / 2) * squareSize;
+      
+      pion.userData.baseX = x;
+      pion.userData.baseZ = z;
+      
+      const pionHeight = pion.scale.y;
+      pion.position.set(x, pionHeight / 2, z);
+    }
+    
     function createPionTexture(color) {
       // Créer une texture pour un pion d'une couleur donnée
       const canvas = document.createElement('canvas');
@@ -852,8 +1137,9 @@
       checkerboard.clear();
       
       // Régénérer le damier avec un nouveau plan
-      const cityMap = generateCityMap();
+      cityMap = generateCityMap();
       roadPositions = [];
+      squareMeshes = {};
       
       // Ajouter les lieux dits
       const landmarks = addLandmarks(cityMap);
@@ -887,6 +1173,10 @@
           square.position.x = (col - (boardSize - 1) / 2) * squareSize;
           square.position.z = (row - (boardSize - 1) / 2) * squareSize;
           
+          // Stocker le mesh pour pouvoir le modifier plus tard
+          square.userData = { row, col, originalColor: material.color.getHex(), isRoad: cityMap[row][col] };
+          squareMeshes[`${row}-${col}`] = square;
+          
           // Ajouter des bordures
           const edges = new THREE.EdgesGeometry(geometry);
           const lineMaterial = new THREE.LineBasicMaterial({ color: 0x666666 });
@@ -918,32 +1208,71 @@
         targetCameraLookAt = { x: 0, y: 0, z: 0 };
         document.getElementById('zoomBtn').textContent = 'Zoom';
       }
+      
+      // Redémarrer le tour du joueur
+      startPlayerTurn();
     });
     
-    // Gestionnaires pour la croix directionnelle (à implémenter plus tard)
-    document.getElementById('dpad-up').addEventListener('click', function() {
-      console.log('Direction: Haut-Droite (diagonale)');
-      // Fonction à ajouter plus tard
+    // Gestionnaires pour la croix directionnelle
+    document.getElementById('dpad-UR').addEventListener('click', function() {
+      if (isPlayerTurn) {
+        // Haut = row--
+        movePlayerOneStep(-1, 0);
+      }
     });
     
-    document.getElementById('dpad-right').addEventListener('click', function() {
-      console.log('Direction: Bas-Droite (diagonale)');
-      // Fonction à ajouter plus tard
+    document.getElementById('dpad-BR').addEventListener('click', function() {
+      if (isPlayerTurn) {
+        // Droite = col++
+        movePlayerOneStep(0, 1);
+      }
     });
     
-    document.getElementById('dpad-down').addEventListener('click', function() {
-      console.log('Direction: Bas-Gauche (diagonale)');
-      // Fonction à ajouter plus tard
+    document.getElementById('dpad-BL').addEventListener('click', function() {
+      if (isPlayerTurn) {
+        // Bas = row++
+        movePlayerOneStep(1, 0);
+      }
     });
     
-    document.getElementById('dpad-left').addEventListener('click', function() {
-      console.log('Direction: Haut-Gauche (diagonale)');
-      // Fonction à ajouter plus tard
+    document.getElementById('dpad-UL').addEventListener('click', function() {
+      if (isPlayerTurn) {
+        // Gauche = col--
+        movePlayerOneStep(0, -1);
+      }
     });
+    
+    function movePlayerOneStep(deltaRow, deltaCol) {
+      if (!redPion || !isPlayerTurn) return;
+      
+      // Calculer la case cible (une seule case de distance)
+      const targetRow = redPion.userData.row + deltaRow;
+      const targetCol = redPion.userData.col + deltaCol;
+      
+      // Vérifier si la case cible est dans les cases accessibles
+      const isAccessible = accessibleCells.some(cell => 
+        cell.row === targetRow && cell.col === targetCol
+      );
+      
+      if (isAccessible) {
+        movePion(redPion, targetRow, targetCol);
+        console.log("Pion déplacé - Continuez ou appuyez sur la flamme pour terminer votre tour");
+      } else {
+        console.log("Case non accessible");
+      }
+    }
     
     document.getElementById('dpad-center').addEventListener('click', function() {
-      console.log('Action: Flamme centrale');
-      // Fonction à ajouter plus tard
+      console.log('Action: Flamme - Fin du tour du joueur');
+      // Terminer le tour du joueur
+      if (isPlayerTurn) {
+        endPlayerTurn();
+      }
+    });
+    
+    // Gestionnaire pour le bouton de fermeture de la confrontation
+    document.getElementById('close-confrontation-btn').addEventListener('click', function() {
+      closeConfrontation();
     });
     
     init();

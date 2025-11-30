@@ -130,6 +130,62 @@
       transform: translate(-50%, -50%) rotate(45deg) scale(0.95);
     }
     
+    /* Compteurs de jauges */
+    #gauges-display {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    
+    .gauge {
+      background-color: rgba(0, 0, 0, 0.6);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      padding: 6px 12px;
+      min-width: 140px;
+    }
+    
+    .gauge-label {
+      font-size: 10px;
+      font-weight: bold;
+      color: #aaaaaa;
+      margin: 0 0 3px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .gauge-value {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 0;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    }
+    
+    #heures-value {
+      color: #3498db;
+    }
+    
+    #confrontation-value {
+      color: #e74c3c;
+    }
+    
+    #alignement-value {
+      color: #f39c12;
+    }
+    
+    #alignement-value.positive {
+      color: #9b59b6;
+    }
+    
+    #alignement-value.negative {
+      color: #27ae60;
+    }
+    
     /* Volet de confrontation */
     #confrontation-panel {
       position: fixed;
@@ -137,32 +193,133 @@
       right: -100%;
       width: 100%;
       height: 100%;
-      background-image: url('background-image.png');
+      background-image: url('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453079/D_bureau_b2b5gx.png');
       background-size: cover;
       background-position: center;
       background-color: #2c3e50;
       transition: right 0.5s ease-in-out;
       z-index: 1000;
       display: flex;
-      align-items: flex-end;
+      flex-direction: column;
+      align-items: stretch;
       justify-content: flex-end;
-      padding: 30px;
     }
     
     #confrontation-panel.active {
       right: 0;
     }
     
-    #close-confrontation-btn {
-      padding: 15px 30px;
+    /* Images des personnages */
+    .character-container {
+      position: absolute;
+      bottom: 5%;
+      height: 70%;
+      display: flex;
+      align-items: flex-end;
+      z-index: 1001;
+    }
+    
+    #antagonist-image {
+      left: 0;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    
+    #player-image {
+      right: 0;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    
+    .character-image {
+      max-height: 75%;
+      height: auto;
+      filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
+    }
+    
+    /* Bloc de dialogue */
+    #dialogue-container {
+      position: relative;
+      width: 100%;
+      height: 25%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 20px;
+      z-index: 1002;
+    }
+    
+    #character-name-box {
+      background-color: rgba(0, 0, 0, 0.8);
+      border: 2px solid #ffffff;
+      border-radius: 8px;
+      padding: 8px 20px;
+      margin-bottom: -2px;
+      margin-left: 20px;
+      z-index: 1003;
+    }
+    
+    #character-name {
       font-size: 18px;
-      background-color: #e74c3c;
+      font-weight: bold;
+      color: white;
+      text-shadow: 
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000;
+      margin: 0;
+    }
+    
+    #dialogue-box {
+      background-color: rgba(20, 20, 40, 0.85);
+      border: 3px solid #444;
+      border-radius: 12px;
+      padding: 25px 30px;
+      width: 100%;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    #dialogue-text {
+      color: white;
+      font-size: 20px;
+      line-height: 1.6;
+      margin: 0 0 15px 0;
+      flex-grow: 1;
+    }
+    
+    #dialogue-controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 15px;
+    }
+    
+    .dialogue-button {
+      padding: 12px 25px;
+      font-size: 16px;
+      background-color: #3498db;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
       transition: background-color 0.3s;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .dialogue-button:hover {
+      background-color: #2980b9;
+    }
+    
+    .dialogue-button:active {
+      background-color: #21618c;
+    }
+    
+    #close-confrontation-btn {
+      background-color: #e74c3c;
     }
     
     #close-confrontation-btn:hover {
@@ -172,15 +329,146 @@
     #close-confrontation-btn:active {
       background-color: #a93226;
     }
+    
+    /* Mini-jeu de cartes */
+    #cards-game-container {
+      position: absolute;
+      bottom: 26%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
+      z-index: 1002;
+      padding: 15px;
+      background-color: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    #cards-game-container.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    .card {
+      width: 80px;
+      height: 112px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7);
+    }
+    
+    .card-player-hand {
+      background-image: url('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg');
+    }
+    
+    .card-player-played {
+      background-image: url('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg');
+      border-color: #3498db;
+    }
+    
+    .card-npc-hand {
+      background-image: url('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg');
+    }
+    
+    .card-npc-played {
+      background-image: url('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg');
+      border-color: #e74c3c;
+    }
+    
+    .card-center {
+      background-image: url('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg');
+      background-color: rgba(50, 50, 50, 0.5);
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Positions spécifiques dans la grille */
+    #card-player-1 { grid-column: 1; grid-row: 1; }
+    #card-player-2 { grid-column: 2; grid-row: 1; }
+    #card-player-3 { grid-column: 3; grid-row: 1; }
+    #card-player-played { grid-column: 1; grid-row: 2; }
+    #card-center { grid-column: 2; grid-row: 2; }
+    #card-npc-played { grid-column: 3; grid-row: 2; }
+    #card-npc-1 { grid-column: 1; grid-row: 3; }
+    #card-npc-2 { grid-column: 2; grid-row: 3; }
+    #card-npc-3 { grid-column: 3; grid-row: 3; }
   </style>
 </head>
 <body>
   <!-- Volet de confrontation -->
   <div id="confrontation-panel">
-    <button id="close-confrontation-btn">Refermer</button>
+    <!-- Images des personnages -->
+    <div class="character-container" id="antagonist-image">
+      <img src="https://res.cloudinary.com/dgrcmakbt/image/upload/v1764444404/ChatGPT_Image_27_nov._2025_21_35_18_mfe5bx.png" alt="Antagoniste" class="character-image">
+    </div>
+    <div class="character-container" id="player-image">
+      <img src="https://res.cloudinary.com/dgrcmakbt/image/upload/v1764444404/ChatGPT_Image_27_nov._2025_21_35_18_mfe5bx.png" alt="Joueur" class="character-image">
+    </div>
+    
+    <!-- Mini-jeu de cartes -->
+    <div id="cards-game-container">
+      <!-- Ligne du haut : Main du joueur (3 cartes) -->
+      <div class="card card-player-hand" id="card-player-1"></div>
+      <div class="card card-player-hand" id="card-player-2"></div>
+      <div class="card card-player-hand" id="card-player-3"></div>
+      
+      <!-- Ligne du milieu : Cartes jouées -->
+      <div class="card card-player-played" id="card-player-played"></div>
+      <div class="card card-center" id="card-center"></div>
+      <div class="card card-npc-played" id="card-npc-played"></div>
+      
+      <!-- Ligne du bas : Main du NPC (3 cartes) -->
+      <div class="card card-npc-hand" id="card-npc-1"></div>
+      <div class="card card-npc-hand" id="card-npc-2"></div>
+      <div class="card card-npc-hand" id="card-npc-3"></div>
+    </div>
+    
+    <!-- Bloc de dialogue -->
+    <div id="dialogue-container">
+      <div id="character-name-box">
+        <p id="character-name">Nom de l'antagoniste</p>
+      </div>
+      <div id="dialogue-box">
+        <p id="dialogue-text">Bonjour je suis le Pion n° 1</p>
+        <div id="dialogue-controls">
+          <button class="dialogue-button" id="next-page-btn">Next Page</button>
+          <button class="dialogue-button" id="close-confrontation-btn">Refermer</button>
+        </div>
+      </div>
+    </div>
   </div>
   
   <div id="container">
+    <!-- Affichage des jauges -->
+    <div id="gauges-display">
+      <div class="gauge">
+        <p class="gauge-label">Heures d'Enquête</p>
+        <p class="gauge-value" id="heures-value">15</p>
+      </div>
+      <div class="gauge">
+        <p class="gauge-label">Confrontation</p>
+        <p class="gauge-value" id="confrontation-value">0</p>
+      </div>
+      <div class="gauge">
+        <p class="gauge-label">Alignement</p>
+        <p class="gauge-value" id="alignement-value">0</p>
+      </div>
+    </div>
+    
     <!-- Croix directionnelle en X -->
     <div id="dpad-container">
       <div class="dpad-button" id="dpad-UR">
@@ -231,7 +519,75 @@
     let accessibleCells = []; // Cases accessibles au pion rouge
     let isPlayerTurn = true; // Tour du joueur
     let confrontedPion = null; // Pion qui a déclenché la confrontation
+    let currentDialoguePage = 0; // Page actuelle du dialogue
+    let currentRotationStep = 0; // Étape de rotation actuelle (0, 1, 2, 3 pour 0°, 90°, 180°, 270°)
     const moveRange = 3; // Range de déplacement
+    
+    // Jauges de points du joueur
+    let heuresEnquete = 15; // Points de déplacement
+    let pointsConfrontation = 0; // Points de confrontation (réinitialisés après chaque confrontation)
+    let pointsAlignement = 0; // Points d'alignement/vertu (peuvent être positifs ou négatifs)
+    let confrontationCount = 0; // Nombre de confrontations effectuées
+    let startTurnPosition = { row: 0, col: 0 }; // Position au début du tour
+    
+    // Inventaire de cartes collectées
+    let cartesCollectees = []; // Inventaire global du joueur
+    
+    // Base de données des cartes
+    const cardsDatabase = [
+      { nom: "Pierre", vsPierre: 2, vsFeuille: 0, vsCiseaux: 1, vsPuits: 0, vsFeu: 1, vsSablier: 0, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 1, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764512932/card000002_fqmuqv.png" },
+      { nom: "Feuille", vsPierre: 1, vsFeuille: 2, vsCiseaux: 0, vsPuits: 1, vsFeu: 0, vsSablier: 0, vsVent: 0, vsAcanthe: 0, vsPie: 1, vsJoker: 0, occurrence: 1, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764512932/card000003_wmqjnf.png" },
+      { nom: "Ciseaux", vsPierre: 0, vsFeuille: 1, vsCiseaux: 2, vsPuits: 0, vsFeu: 0, vsSablier: 0, vsVent: 0, vsAcanthe: 1, vsPie: 0, vsJoker: 0, occurrence: 1, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764512933/card000004_jvc95e.png" },
+      { nom: "Puits", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 2, vsFeu: 1, vsSablier: 0, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 3, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
+      { nom: "Feu", vsPierre: 0, vsFeuille: 1, vsCiseaux: 1, vsPuits: 0, vsFeu: 2, vsSablier: 0, vsVent: 1, vsAcanthe: 1, vsPie: 1, vsJoker: 0, occurrence: 5, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
+      { nom: "Sablier", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 0, vsFeu: 0, vsSablier: 2, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 7, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
+      { nom: "Vent", vsPierre: 0, vsFeuille: 1, vsCiseaux: 1, vsPuits: 0, vsFeu: 0, vsSablier: 0, vsVent: 2, vsAcanthe: 1, vsPie: 1, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
+      { nom: "Acanthe", vsPierre: 1, vsFeuille: 1, vsCiseaux: 0, vsPuits: 1, vsFeu: 0, vsSablier: 0, vsVent: 0, vsAcanthe: 2, vsPie: 1, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
+      { nom: "Pie", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 1, vsFeu: 0, vsSablier: 1, vsVent: 0, vsAcanthe: 0, vsPie: 2, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
+      { nom: "Joker", vsPierre: 1, vsFeuille: 1, vsCiseaux: 1, vsPuits: 1, vsFeu: 1, vsSablier: 1, vsVent: 1, vsAcanthe: 1, vsPie: 1, vsJoker: 1, occurrence: 17, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" }
+    ];
+    
+    // État du mini-jeu
+    let gameState = {
+      isGameActive: false,
+      currentTurn: 0,
+      playerHasInitiative: false,
+      deckJoueur: [],
+      deckAdversaire: [],
+      mainJoueur: [],
+      mainAdversaire: [],
+      carteJoueeJoueur: null,
+      carteJoueeAdversaire: null,
+      waitingForPlayerAction: false,
+      actionType: null // "draw", "play"
+    };
+    
+    // Dialogues pour chaque type de pion
+    const dialogues = {
+      green: {
+        name: "Pion Vert",
+        pages: [
+          "Bonjour je suis le Pion Vert n° 1 ! Je garde ce secteur de la ville.",
+          "Tu ne passeras pas si facilement. Prépare-toi à affronter ma détermination !",
+          "Bon... peut-être une autre fois. Je dois y aller maintenant !"
+        ]
+      },
+      purple: {
+        name: "Pion Violet",
+        pages: [
+          "Ah, nous nous rencontrons enfin. Je suis le Pion Violet.",
+          "On m'a prévenu de ta venue dans ces rues. Tu es courageux de venir jusqu'ici.",
+          "Cette confrontation est terminée pour aujourd'hui. À bientôt, voyageur."
+        ]
+      },
+      default: {
+        name: "Antagoniste",
+        pages: [
+          "Bonjour, étranger.",
+          "Que fais-tu dans ce quartier ?"
+        ]
+      }
+    };
     
     function init() {
       // Créer la scène
@@ -250,9 +606,12 @@
       
       // Créer le renderer
       const container = document.getElementById('container');
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(600, 600);
       container.insertBefore(renderer.domElement, container.firstChild);
+      
+      // Créer la skysphere
+      createSkysphere();
       
       // Créer le damier 15x15
       checkerboard = new THREE.Group();
@@ -328,7 +687,34 @@
       // Démarrer le tour du joueur
       startPlayerTurn();
       
+      // Mettre à jour l'affichage des jauges
+      updateGaugesDisplay();
+      
       animate();
+    }
+    
+    function createSkysphere() {
+      // Créer une sphère inversée (texture à l'intérieur)
+      const geometry = new THREE.SphereGeometry(100, 64, 64);
+      
+      // Charger la texture
+      const textureLoader = new THREE.TextureLoader();
+      const texture = textureLoader.load('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764366928/uzralk_texture_for_3D_skysphere_video_game_texture_futuristic_i_ea3bf670-69cf-42b7-9daf-c4fd4040b193_d5nsmp.png');
+      
+      // Créer le matériau avec la texture à l'intérieur
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.BackSide, // Rendre visible l'intérieur de la sphère
+        transparent: false
+      });
+      
+      skysphere = new THREE.Mesh(geometry, material);
+      
+      // Rotation initiale pour aligner avec le damier
+      // La rotation de 45° correspond à l'orientation initiale du damier
+      skysphere.rotation.y = Math.PI / 4; // 45 degrés
+      
+      scene.add(skysphere);
     }
     
     function generateCityMap() {
@@ -667,6 +1053,463 @@
       return geometry;
     }
     
+    function updateGaugesDisplay() {
+      // Mettre à jour l'affichage des jauges
+      document.getElementById('heures-value').textContent = heuresEnquete;
+      document.getElementById('confrontation-value').textContent = pointsConfrontation;
+      
+      const alignementElement = document.getElementById('alignement-value');
+      alignementElement.textContent = pointsAlignement > 0 ? `+${pointsAlignement}` : pointsAlignement;
+      
+      // Changer la couleur selon le signe
+      alignementElement.classList.remove('positive', 'negative');
+      if (pointsAlignement > 0) {
+        alignementElement.classList.add('positive');
+      } else if (pointsAlignement < 0) {
+        alignementElement.classList.add('negative');
+      }
+    }
+    
+    // ===== FONCTIONS DU MINI-JEU DE CARTES =====
+    
+    function startCardGame() {
+      console.log("=== DÉBUT DU MINI-JEU ===");
+      gameState.isGameActive = true;
+      gameState.currentTurn = 0;
+      
+      // Rendre le tableau de cartes visible
+      const cardsContainer = document.getElementById('cards-game-container');
+      cardsContainer.classList.add('visible');
+      
+      // Tirer l'initiative au hasard
+      gameState.playerHasInitiative = Math.random() < 0.5;
+      console.log(`Initiative: ${gameState.playerHasInitiative ? "Joueur" : "Adversaire"}`);
+      
+      // Préparer les decks
+      preparerDecks();
+      
+      // Démarrer le premier tour
+      setTimeout(() => {
+        if (gameState.playerHasInitiative) {
+          demarrerTourJoueurInitiative();
+        } else {
+          demarrerTourAdversaireInitiative();
+        }
+      }, 1000);
+    }
+    
+    function preparerDecks() {
+      // Deck du joueur : 3 Pierre, 3 Feuille, 3 Ciseaux + cartes collectées
+      gameState.deckJoueur = [];
+      for (let i = 0; i < 3; i++) {
+        gameState.deckJoueur.push(cardsDatabase[0]); // Pierre
+        gameState.deckJoueur.push(cardsDatabase[1]); // Feuille
+        gameState.deckJoueur.push(cardsDatabase[2]); // Ciseaux
+      }
+      
+      // Ajouter les cartes collectées
+      gameState.deckJoueur = gameState.deckJoueur.concat(cartesCollectees);
+      
+      // Mélanger le deck
+      shuffleDeck(gameState.deckJoueur);
+      
+      // Deck adversaire : cartes bonus selon l'inventaire du joueur
+      gameState.deckAdversaire = [];
+      const nbCartesBonus = Math.max(0, cartesCollectees.length - 1);
+      
+      for (let i = 0; i < nbCartesBonus; i++) {
+        const carte = tirerCarteAleatoire(cardsDatabase);
+        gameState.deckAdversaire.push(carte);
+      }
+      
+      console.log(`Deck Joueur: ${gameState.deckJoueur.length} cartes`);
+      console.log(`Deck Adversaire: ${gameState.deckAdversaire.length} cartes`);
+    }
+    
+    function shuffleDeck(deck) {
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+    }
+    
+    function tirerCarteAleatoire(source) {
+      // Tirer selon l'occurrence
+      const totalOccurrence = source.reduce((sum, card) => sum + card.occurrence, 0);
+      let random = Math.random() * totalOccurrence;
+      
+      for (const card of source) {
+        random -= card.occurrence;
+        if (random <= 0) {
+          return card;
+        }
+      }
+      
+      return source[0];
+    }
+    
+    function demarrerTourJoueurInitiative() {
+      gameState.currentTurn++;
+      console.log(`=== TOUR ${gameState.currentTurn} - Joueur a l'initiative ===`);
+      
+      clearCardsDisplay();
+      
+      // Distribuer 2 cartes au joueur (Pierre, Feuille ou Ciseaux uniquement)
+      const cartesDeBase = [cardsDatabase[0], cardsDatabase[1], cardsDatabase[2]];
+      gameState.mainJoueur = [];
+      for (let i = 0; i < 2; i++) {
+        const carte = cartesDeBase[Math.floor(Math.random() * 3)];
+        gameState.mainJoueur.push(carte);
+        retirerCarteDuDeck(gameState.deckJoueur, carte);
+      }
+      
+      // Distribuer 3 cartes à l'adversaire
+      gameState.mainAdversaire = [];
+      for (let i = 0; i < 3; i++) {
+        // Tirer depuis le deck adversaire s'il a des cartes, sinon depuis les cartes de base
+        if (gameState.deckAdversaire.length > 0) {
+          const carte = gameState.deckAdversaire.pop();
+          gameState.mainAdversaire.push(carte);
+        } else {
+          // Si le deck adversaire est vide, utiliser des cartes de base
+          const carte = cartesDeBase[Math.floor(Math.random() * 3)];
+          gameState.mainAdversaire.push(carte);
+        }
+      }
+      
+      afficherCartes();
+      
+      // Inviter le joueur à tirer une carte
+      gameState.waitingForPlayerAction = true;
+      gameState.actionType = "draw";
+      console.log("Cliquez sur le deck pour tirer une carte");
+    }
+    
+    function demarrerTourAdversaireInitiative() {
+      gameState.currentTurn++;
+      console.log(`=== TOUR ${gameState.currentTurn} - Adversaire a l'initiative ===`);
+      
+      clearCardsDisplay();
+      
+      // Distribuer 2 cartes au joueur
+      const cartesDeBase = [cardsDatabase[0], cardsDatabase[1], cardsDatabase[2]];
+      gameState.mainJoueur = [];
+      for (let i = 0; i < 2; i++) {
+        const carte = cartesDeBase[Math.floor(Math.random() * 3)];
+        gameState.mainJoueur.push(carte);
+        retirerCarteDuDeck(gameState.deckJoueur, carte);
+      }
+      
+      // Distribuer 3 cartes à l'adversaire
+      gameState.mainAdversaire = [];
+      for (let i = 0; i < 3; i++) {
+        // Tirer depuis le deck adversaire s'il a des cartes, sinon depuis les cartes de base
+        if (gameState.deckAdversaire.length > 0) {
+          const carte = gameState.deckAdversaire.pop();
+          gameState.mainAdversaire.push(carte);
+        } else {
+          // Si le deck adversaire est vide, utiliser des cartes de base
+          const carte = cartesDeBase[Math.floor(Math.random() * 3)];
+          gameState.mainAdversaire.push(carte);
+        }
+      }
+      
+      afficherCartes();
+      
+      // L'adversaire joue une carte
+      setTimeout(() => {
+        adversaireJoueCarte();
+        
+        // Inviter le joueur à tirer puis jouer
+        gameState.waitingForPlayerAction = true;
+        gameState.actionType = "draw";
+        console.log("Cliquez sur le deck pour tirer une carte");
+      }, 1000);
+    }
+    
+    function retirerCarteDuDeck(deck, carte) {
+      const index = deck.findIndex(c => c.nom === carte.nom);
+      if (index !== -1) {
+        deck.splice(index, 1);
+      }
+    }
+    
+    function afficherCartes() {
+      // Afficher main du joueur
+      for (let i = 0; i < 3; i++) {
+        const cardEl = document.getElementById(`card-player-${i + 1}`);
+        if (cardEl) {
+          if (i < gameState.mainJoueur.length) {
+            cardEl.style.backgroundImage = `url('${gameState.mainJoueur[i].img}')`;
+            cardEl.style.visibility = 'visible';
+          } else {
+            // Laisser l'emplacement vide
+            cardEl.style.backgroundImage = 'none';
+            cardEl.style.backgroundColor = 'rgba(50, 50, 50, 0.3)';
+            cardEl.style.visibility = 'visible';
+          }
+        }
+      }
+      
+      // Afficher main de l'adversaire
+      for (let i = 0; i < 3; i++) {
+        const cardEl = document.getElementById(`card-npc-${i + 1}`);
+        if (cardEl) {
+          if (i < gameState.mainAdversaire.length) {
+            cardEl.style.backgroundImage = `url('${gameState.mainAdversaire[i].img}')`;
+            cardEl.style.visibility = 'visible';
+          } else {
+            // Laisser l'emplacement vide
+            cardEl.style.backgroundImage = 'none';
+            cardEl.style.backgroundColor = 'rgba(50, 50, 50, 0.3)';
+            cardEl.style.visibility = 'visible';
+          }
+        }
+      }
+      
+      // Afficher les cartes jouées si elles existent
+      if (gameState.carteJoueeJoueur) {
+        const cardEl = document.getElementById('card-player-played');
+        cardEl.style.backgroundImage = `url('${gameState.carteJoueeJoueur.img}')`;
+        cardEl.style.backgroundColor = '';
+        cardEl.style.visibility = 'visible';
+      }
+      
+      if (gameState.carteJoueeAdversaire) {
+        const cardEl = document.getElementById('card-npc-played');
+        cardEl.style.backgroundImage = `url('${gameState.carteJoueeAdversaire.img}')`;
+        cardEl.style.backgroundColor = '';
+        cardEl.style.visibility = 'visible';
+      }
+    }
+    
+    function clearCardsDisplay() {
+      // Cacher toutes les cartes sauf le deck central
+      for (let i = 1; i <= 3; i++) {
+        const playerCard = document.getElementById(`card-player-${i}`);
+        const npcCard = document.getElementById(`card-npc-${i}`);
+        if (playerCard) playerCard.style.visibility = 'hidden';
+        if (npcCard) npcCard.style.visibility = 'hidden';
+      }
+      
+      document.getElementById('card-player-played').style.visibility = 'hidden';
+      document.getElementById('card-npc-played').style.visibility = 'hidden';
+      
+      gameState.carteJoueeJoueur = null;
+      gameState.carteJoueeAdversaire = null;
+    }
+    
+    function joueurTireCarte() {
+      if (gameState.deckJoueur.length > 0) {
+        const carte = gameState.deckJoueur.pop();
+        gameState.mainJoueur.push(carte);
+        afficherCartes();
+        
+        gameState.actionType = "play";
+        console.log("Choisissez une carte à jouer");
+      }
+    }
+    
+    function joueurJoueCarte(index) {
+      if (index < gameState.mainJoueur.length) {
+        gameState.carteJoueeJoueur = gameState.mainJoueur[index];
+        gameState.mainJoueur.splice(index, 1);
+        afficherCartes();
+        
+        gameState.waitingForPlayerAction = false;
+        
+        // Si adversaire n'a pas encore joué, il joue maintenant
+        if (!gameState.carteJoueeAdversaire) {
+          setTimeout(() => {
+            adversaireJoueCarte();
+            resoudreTour();
+          }, 500);
+        } else {
+          // Sinon résoudre directement
+          resoudreTour();
+        }
+      }
+    }
+    
+    function adversaireJoueCarte() {
+      console.log("Adversaire joue une carte...");
+      
+      if (gameState.mainAdversaire.length === 0) {
+        console.error("Adversaire n'a pas de cartes!");
+        return;
+      }
+      
+      // Stratégie simple : essayer de gagner ou faire égalité
+      let bestIndex = 0;
+      
+      if (gameState.carteJoueeJoueur) {
+        // Adversaire répond à la carte du joueur
+        let bestScore = -1;
+        for (let i = 0; i < gameState.mainAdversaire.length; i++) {
+          const score = evaluerCarte(gameState.mainAdversaire[i], gameState.carteJoueeJoueur);
+          if (score > bestScore) {
+            bestScore = score;
+            bestIndex = i;
+          }
+        }
+        console.log(`Adversaire choisit la carte ${bestIndex + 1} (score: ${bestScore})`);
+      } else {
+        // Adversaire joue en premier, choix aléatoire
+        bestIndex = Math.floor(Math.random() * gameState.mainAdversaire.length);
+        console.log(`Adversaire choisit la carte ${bestIndex + 1} (aléatoire)`);
+      }
+      
+      gameState.carteJoueeAdversaire = gameState.mainAdversaire[bestIndex];
+      gameState.mainAdversaire.splice(bestIndex, 1);
+      
+      console.log(`Adversaire joue: ${gameState.carteJoueeAdversaire.nom}`);
+      
+      afficherCartes();
+    }
+    
+    function evaluerCarte(carteAttaquant, carteDefenseur) {
+      const nomDefenseur = carteDefenseur.nom;
+      const key = `vs${nomDefenseur}`;
+      return carteAttaquant[key] || 0;
+    }
+    
+    function resoudreTour() {
+      if (!gameState.carteJoueeJoueur || !gameState.carteJoueeAdversaire) return;
+      
+      const scoreJoueur = evaluerCarte(gameState.carteJoueeJoueur, gameState.carteJoueeAdversaire);
+      const scoreAdversaire = evaluerCarte(gameState.carteJoueeAdversaire, gameState.carteJoueeJoueur);
+      
+      let resultat = "";
+      let gainPerte = 0;
+      
+      // VICTOIRE si le joueur a un meilleur score
+      if (scoreJoueur > scoreAdversaire) {
+        resultat = "VICTOIRE";
+        gainPerte = gameState.carteJoueeJoueur.occurrence;
+        heuresEnquete += gainPerte;
+        console.log(`Joueur gagne avec ${gameState.carteJoueeJoueur.nom} (${scoreJoueur}) vs ${gameState.carteJoueeAdversaire.nom} (${scoreAdversaire})`);
+      } 
+      // DÉFAITE si l'adversaire a un meilleur score
+      else if (scoreAdversaire > scoreJoueur) {
+        resultat = "DÉFAITE";
+        gainPerte = -gameState.carteJoueeAdversaire.occurrence;
+        heuresEnquete += gainPerte;
+        console.log(`Joueur perd avec ${gameState.carteJoueeJoueur.nom} (${scoreJoueur}) vs ${gameState.carteJoueeAdversaire.nom} (${scoreAdversaire})`);
+      } 
+      // ÉGALITÉ si scores identiques
+      else {
+        resultat = "ÉGALITÉ";
+        console.log(`Égalité avec ${gameState.carteJoueeJoueur.nom} (${scoreJoueur}) vs ${gameState.carteJoueeAdversaire.nom} (${scoreAdversaire})`);
+      }
+      
+      console.log(`${resultat} - ${gainPerte > 0 ? '+' : ''}${gainPerte} Heures d'Enquête`);
+      
+      // Afficher le résultat sur la case centrale
+      const centerCard = document.getElementById('card-center');
+      centerCard.textContent = resultat;
+      centerCard.style.display = 'flex';
+      centerCard.style.alignItems = 'center';
+      centerCard.style.justifyContent = 'center';
+      centerCard.style.fontSize = '18px';
+      centerCard.style.fontWeight = 'bold';
+      centerCard.style.color = resultat === "VICTOIRE" ? '#2ecc71' : (resultat === "DÉFAITE" ? '#e74c3c' : '#f39c12');
+      
+      updateGaugesDisplay();
+      
+      // Passer au tour suivant ou terminer
+      setTimeout(() => {
+        centerCard.textContent = '';
+        centerCard.style.fontSize = '';
+        centerCard.style.color = '';
+        
+        if (gameState.currentTurn >= 2) {
+          terminerMiniJeu();
+        } else {
+          // Tour suivant avec initiative inversée
+          if (gameState.playerHasInitiative) {
+            demarrerTourAdversaireInitiative();
+          } else {
+            demarrerTourJoueurInitiative();
+          }
+        }
+      }, 2000);
+    }
+    
+    function terminerMiniJeu() {
+      console.log("=== FIN DU MINI-JEU ===");
+      gameState.isGameActive = false;
+      clearCardsDisplay();
+      
+      // Le bouton "Refermer" permet de fermer la confrontation
+      console.log("Cliquez sur 'Refermer' pour terminer la confrontation");
+    }
+    
+    function reinitialiserMiniJeu() {
+      console.log("Réinitialisation du mini-jeu de cartes");
+      
+      // Masquer le tableau de cartes
+      const cardsContainer = document.getElementById('cards-game-container');
+      cardsContainer.classList.remove('visible');
+      
+      // Réinitialiser l'état du jeu
+      gameState.isGameActive = false;
+      gameState.currentTurn = 0;
+      gameState.playerHasInitiative = false;
+      gameState.deckJoueur = [];
+      gameState.deckAdversaire = [];
+      gameState.mainJoueur = [];
+      gameState.mainAdversaire = [];
+      gameState.carteJoueeJoueur = null;
+      gameState.carteJoueeAdversaire = null;
+      gameState.waitingForPlayerAction = false;
+      gameState.actionType = null;
+      
+      // Réinitialiser la page de dialogue
+      currentDialoguePage = 0;
+      
+      // Effacer l'affichage des cartes
+      clearCardsDisplay();
+      
+      // Nettoyer la case centrale
+      const centerCard = document.getElementById('card-center');
+      centerCard.textContent = '';
+      centerCard.style.fontSize = '';
+      centerCard.style.color = '';
+      centerCard.style.display = '';
+      centerCard.style.backgroundImage = 'url("https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg")';
+      
+      // Rendre toutes les cartes visibles par défaut (comme au début)
+      for (let i = 1; i <= 3; i++) {
+        const playerCard = document.getElementById(`card-player-${i}`);
+        const npcCard = document.getElementById(`card-npc-${i}`);
+        if (playerCard) {
+          playerCard.style.visibility = 'visible';
+          playerCard.style.backgroundImage = 'url("https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg")';
+          playerCard.style.backgroundColor = '';
+        }
+        if (npcCard) {
+          npcCard.style.visibility = 'visible';
+          npcCard.style.backgroundImage = 'url("https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg")';
+          npcCard.style.backgroundColor = '';
+        }
+      }
+      
+      const playerPlayed = document.getElementById('card-player-played');
+      const npcPlayed = document.getElementById('card-npc-played');
+      if (playerPlayed) {
+        playerPlayed.style.visibility = 'visible';
+        playerPlayed.style.backgroundImage = 'url("https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg")';
+        playerPlayed.style.backgroundColor = '';
+      }
+      if (npcPlayed) {
+        npcPlayed.style.visibility = 'visible';
+        npcPlayed.style.backgroundImage = 'url("https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg")';
+        npcPlayed.style.backgroundColor = '';
+      }
+      
+      console.log("Mini-jeu réinitialisé et prêt pour la prochaine confrontation");
+    }
+    
     function calculateAccessibleCells(fromRow, fromCol, range) {
       // Calculer les cases accessibles depuis une position donnée avec un range
       const accessible = [];
@@ -753,13 +1596,45 @@
     
     function startPlayerTurn() {
       isPlayerTurn = true;
+      
+      // Mémoriser la position de départ du tour
+      if (redPion) {
+        startTurnPosition = { row: redPion.userData.row, col: redPion.userData.col };
+      }
+      
       highlightAccessibleCells();
-      console.log("Tour du joueur - Déplacez-vous dans les cases surlignées, puis appuyez sur la flamme");
+      updateGaugesDisplay();
+      
+      console.log("=== Tour du joueur ===");
+      console.log(`Heures d'Enquête: ${heuresEnquete}`);
+      console.log(`Points d'Alignement: ${pointsAlignement}`);
+      console.log("Déplacez-vous dans les cases surlignées, puis appuyez sur la flamme");
     }
     
     function endPlayerTurn() {
       isPlayerTurn = false;
       clearHighlights();
+      
+      // Calculer la distance parcourue pendant ce tour
+      if (redPion) {
+        const distanceTraveled = Math.abs(redPion.userData.row - startTurnPosition.row) + 
+                                  Math.abs(redPion.userData.col - startTurnPosition.col);
+        
+        // Soustraire les heures d'enquête
+        heuresEnquete -= distanceTraveled;
+        console.log(`Distance parcourue: ${distanceTraveled} cases`);
+        console.log(`Heures d'Enquête restantes: ${heuresEnquete}`);
+        
+        // Mettre à jour l'affichage
+        updateGaugesDisplay();
+        
+        // Vérifier si le joueur a perdu (plus d'heures d'enquête)
+        if (heuresEnquete <= 0) {
+          gameOver();
+          return;
+        }
+      }
+      
       console.log("Tour de l'adversaire");
       
       // Vérifier s'il y a un pion adverse adjacent au pion rouge
@@ -772,6 +1647,13 @@
           aiTurn();
         }, 500);
       }
+    }
+    
+    function gameOver() {
+      console.log("=== VOUS AVEZ PERDU ===");
+      console.log("Vos Heures d'Enquête sont épuisées!");
+      alert("VOUS AVEZ PERDU\n\nVos Heures d'Enquête sont épuisées!\n\nCliquez sur 'Recommencer' pour rejouer.");
+      isPlayerTurn = false;
     }
     
     function isEnemyAdjacentToRedPion() {
@@ -809,7 +1691,101 @@
     function openConfrontation() {
       const panel = document.getElementById('confrontation-panel');
       panel.classList.add('active');
+      
+      // Incrémenter le compteur de confrontations
+      confrontationCount++;
+      
+      // Calculer les points d'alignement à ajouter/soustraire (2, 4, 6, 8, 10, ...)
+      const alignmentChange = confrontationCount * 2;
+      
+      // Déterminer le type de pion confronté
+      let dialogueType = 'default';
+      let pionColor = 'default';
+      
+      if (confrontedPion) {
+        // Identifier le type basé sur l'index dans le tableau pionTypes
+        const pionIndex = pions.indexOf(confrontedPion);
+        if (pionIndex === 0) {
+          dialogueType = 'default'; // Pion rouge (ne devrait pas arriver)
+        } else if (pionIndex >= 1 && pionIndex <= 5) {
+          dialogueType = 'green'; // Pions verts (indices 1-5)
+          pionColor = 'green';
+          // Confrontation avec un pion vert : on AJOUTE des points d'alignement
+          pointsAlignement += alignmentChange;
+          console.log(`+${alignmentChange} Points d'Alignement (confrontation avec pion vert)`);
+        } else {
+          dialogueType = 'purple'; // Pions violets (indices 6-8)
+          pionColor = 'purple';
+          // Confrontation avec un pion violet : on SOUSTRAIT des points d'alignement
+          pointsAlignement -= alignmentChange;
+          console.log(`-${alignmentChange} Points d'Alignement (confrontation avec pion violet)`);
+        }
+      }
+      
+      // Calculer les points de confrontation initiaux (6 de base)
+      pointsConfrontation = 6;
+      
+      // Appliquer les bonus/malus selon l'alignement
+      if (pointsAlignement > 0) {
+        // Alignement positif : bonus avec violets, malus avec verts
+        if (pionColor === 'green') {
+          pointsConfrontation -= 3;
+        } else if (pionColor === 'purple') {
+          pointsConfrontation += 3;
+        }
+      } else if (pointsAlignement < 0) {
+        // Alignement négatif : bonus avec verts, malus avec violets
+        if (pionColor === 'green') {
+          pointsConfrontation += 3;
+        } else if (pionColor === 'purple') {
+          pointsConfrontation -= 3;
+        }
+      }
+      
+      console.log("=== CONFRONTATION ===");
+      console.log(`Confrontation n°${confrontationCount}`);
+      console.log(`Points d'Alignement: ${pointsAlignement}`);
+      console.log(`Points de Confrontation: ${pointsConfrontation}`);
+      
+      // Mettre à jour l'affichage
+      updateGaugesDisplay();
+      
+      // Réinitialiser à la première page
+      currentDialoguePage = 0;
+      updateDialogue(dialogueType);
+      
       console.log("Phase Confrontation déclenchée");
+    }
+    
+    function updateDialogue(dialogueType) {
+      const dialogue = dialogues[dialogueType] || dialogues.default;
+      const nameElement = document.getElementById('character-name');
+      const textElement = document.getElementById('dialogue-text');
+      const nextBtn = document.getElementById('next-page-btn');
+      
+      // Mettre à jour le nom
+      nameElement.textContent = dialogue.name;
+      
+      // Mettre à jour le texte de la page actuelle
+      if (currentDialoguePage < dialogue.pages.length) {
+        textElement.textContent = dialogue.pages[currentDialoguePage];
+      }
+      
+      // Cacher le bouton "Next Page" si on est à la dernière page
+      if (currentDialoguePage >= dialogue.pages.length - 1) {
+        nextBtn.style.display = 'none';
+        // Démarrer le mini-jeu quand le dialogue est terminé
+        if (!gameState.isGameActive) {
+          setTimeout(() => {
+            startCardGame();
+          }, 500);
+        }
+      } else {
+        nextBtn.style.display = 'inline-block';
+      }
+      
+      // Stocker le type de dialogue pour le bouton Next Page
+      nextBtn.dataset.dialogueType = dialogueType;
     }
     
     function closeConfrontation() {
@@ -817,11 +1793,26 @@
       panel.classList.remove('active');
       console.log("Phase Confrontation terminée");
       
+      // Regagner 5 heures d'enquête après une confrontation
+      heuresEnquete += 5;
+      console.log(`+5 Heures d'Enquête (récompense de confrontation)`);
+      console.log(`Heures d'Enquête: ${heuresEnquete}`);
+      
       // Replacer le pion confronté ailleurs sur l'échiquier
       if (confrontedPion) {
         relocateConfrontedPion(confrontedPion);
         confrontedPion = null; // Réinitialiser
       }
+      
+      // Réinitialiser les points de confrontation à zéro
+      pointsConfrontation = 0;
+      console.log(`Points de Confrontation réinitialisés: ${pointsConfrontation}`);
+      
+      // Réinitialiser le mini-jeu de cartes
+      reinitialiserMiniJeu();
+      
+      // Mettre à jour l'affichage
+      updateGaugesDisplay();
       
       // Continuer le tour de l'adversaire après la fermeture
       setTimeout(() => {
@@ -1011,6 +2002,11 @@
         if (Math.abs(diff) > 0.01) {
           checkerboard.rotation.y += diff * 0.1;
           
+          // Faire pivoter la skysphere en synchronisation avec le damier
+          if (skysphere) {
+            skysphere.rotation.y = checkerboard.rotation.y + Math.PI / 4; // +45° pour l'alignement initial
+          }
+          
           // Si on est zoomé, mettre à jour la position de la caméra pour suivre le pion rouge
           if (isZoomed && redPion) {
             const redPionWorldPos = new THREE.Vector3();
@@ -1032,6 +2028,9 @@
           }
         } else {
           checkerboard.rotation.y = targetRotation;
+          if (skysphere) {
+            skysphere.rotation.y = targetRotation + Math.PI / 4;
+          }
           isRotating = false;
         }
       }
@@ -1084,11 +2083,13 @@
       renderer.render(scene, camera);
     }
     
-    // Gestionnaire des boutons
+    // Gestionnaires des boutons Rotate
     document.getElementById('rotateRightBtn').addEventListener('click', function() {
       if (!isRotating) {
         isRotating = true;
         targetRotation += Math.PI / 2; // +90 degrés
+        currentRotationStep = (currentRotationStep + 1) % 4;
+        updateDirectionMappings();
       }
     });
     
@@ -1096,6 +2097,8 @@
       if (!isRotating) {
         isRotating = true;
         targetRotation -= Math.PI / 2; // -90 degrés
+        currentRotationStep = (currentRotationStep - 1 + 4) % 4;
+        updateDirectionMappings();
       }
     });
     
@@ -1133,6 +2136,21 @@
     });
     
     document.getElementById('resetBtn').addEventListener('click', function() {
+      // Réinitialiser les jauges de points
+      heuresEnquete = 15;
+      pointsConfrontation = 0;
+      pointsAlignement = 0;
+      confrontationCount = 0;
+      currentRotationStep = 0;
+      
+      console.log("=== JEU RÉINITIALISÉ ===");
+      console.log(`Heures d'Enquête: ${heuresEnquete}`);
+      console.log(`Points d'Alignement: ${pointsAlignement}`);
+      console.log(`Confrontations: ${confrontationCount}`);
+      
+      // Mettre à jour l'affichage
+      updateGaugesDisplay();
+      
       // Régénérer le réseau routier
       checkerboard.clear();
       
@@ -1216,31 +2234,101 @@
     // Gestionnaires pour la croix directionnelle
     document.getElementById('dpad-UR').addEventListener('click', function() {
       if (isPlayerTurn) {
-        // Haut = row--
-        movePlayerOneStep(-1, 0);
+        executeDirection('UR');
       }
     });
     
     document.getElementById('dpad-BR').addEventListener('click', function() {
       if (isPlayerTurn) {
-        // Droite = col++
-        movePlayerOneStep(0, 1);
+        executeDirection('BR');
       }
     });
     
     document.getElementById('dpad-BL').addEventListener('click', function() {
       if (isPlayerTurn) {
-        // Bas = row++
-        movePlayerOneStep(1, 0);
+        executeDirection('BL');
       }
     });
     
     document.getElementById('dpad-UL').addEventListener('click', function() {
       if (isPlayerTurn) {
-        // Gauche = col--
-        movePlayerOneStep(0, -1);
+        executeDirection('UL');
       }
     });
+    
+    // Fonctions de déplacement absolues (relatives à la grille)
+    function moveUp() {
+      movePlayerOneStep(-1, 0); // row--
+    }
+    
+    function moveRight() {
+      movePlayerOneStep(0, 1); // col++
+    }
+    
+    function moveDown() {
+      movePlayerOneStep(1, 0); // row++
+    }
+    
+    function moveLeft() {
+      movePlayerOneStep(0, -1); // col--
+    }
+    
+    // Mapping des boutons aux fonctions selon la rotation
+    let directionMappings = {
+      'UR': moveUp,
+      'BR': moveRight,
+      'BL': moveDown,
+      'UL': moveLeft
+    };
+    
+    function updateDirectionMappings() {
+      // Réaffecter les fonctions selon la rotation actuelle
+      // currentRotationStep: 0=0°, 1=90°, 2=180°, 3=270°
+      
+      switch(currentRotationStep) {
+        case 0: // 0° - orientation initiale
+          directionMappings = {
+            'UR': moveUp,
+            'BR': moveRight,
+            'BL': moveDown,
+            'UL': moveLeft
+          };
+          break;
+        case 1: // 90° rotation droite
+          directionMappings = {
+            'UR': moveRight,
+            'BR': moveDown,
+            'BL': moveLeft,
+            'UL': moveUp
+          };
+          break;
+        case 2: // 180°
+          directionMappings = {
+            'UR': moveDown,
+            'BR': moveLeft,
+            'BL': moveUp,
+            'UL': moveRight
+          };
+          break;
+        case 3: // 270° (ou -90°)
+          directionMappings = {
+            'UR': moveLeft,
+            'BR': moveUp,
+            'BL': moveRight,
+            'UL': moveDown
+          };
+          break;
+      }
+      
+      console.log(`Direction mappings updated for rotation step ${currentRotationStep}`);
+    }
+    
+    function executeDirection(buttonId) {
+      const directionFunction = directionMappings[buttonId];
+      if (directionFunction) {
+        directionFunction();
+      }
+    }
     
     function movePlayerOneStep(deltaRow, deltaCol) {
       if (!redPion || !isPlayerTurn) return;
@@ -1273,6 +2361,38 @@
     // Gestionnaire pour le bouton de fermeture de la confrontation
     document.getElementById('close-confrontation-btn').addEventListener('click', function() {
       closeConfrontation();
+    });
+    
+    // Gestionnaire pour le bouton Next Page
+    document.getElementById('next-page-btn').addEventListener('click', function() {
+      currentDialoguePage++;
+      const dialogueType = this.dataset.dialogueType || 'default';
+      updateDialogue(dialogueType);
+    });
+    
+    // Gestionnaires pour les cartes
+    document.getElementById('card-center').addEventListener('click', function() {
+      if (gameState.waitingForPlayerAction && gameState.actionType === "draw") {
+        joueurTireCarte();
+      }
+    });
+    
+    document.getElementById('card-player-1').addEventListener('click', function() {
+      if (gameState.waitingForPlayerAction && gameState.actionType === "play") {
+        joueurJoueCarte(0);
+      }
+    });
+    
+    document.getElementById('card-player-2').addEventListener('click', function() {
+      if (gameState.waitingForPlayerAction && gameState.actionType === "play") {
+        joueurJoueCarte(1);
+      }
+    });
+    
+    document.getElementById('card-player-3').addEventListener('click', function() {
+      if (gameState.waitingForPlayerAction && gameState.actionType === "play") {
+        joueurJoueCarte(2);
+      }
     });
     
     init();

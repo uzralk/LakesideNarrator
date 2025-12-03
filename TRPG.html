@@ -550,6 +550,61 @@
         transform: translateY(-20px) scale(0.9);
       }
     }
+
+    /* Overlays bonus / piège */
+    #bonus-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 260px;
+      height: 360px;
+      background-color: rgba(0, 0, 0, 0.8);
+      border: 3px solid #f1c40f;
+      border-radius: 12px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+    }
+
+    #bonus-overlay-image {
+      max-width: 100%;
+      max-height: 100%;
+      display: none;
+    }
+
+    #bonus-overlay-text {
+      display: none;
+      color: #e74c3c;
+      font-size: 42px;
+      font-weight: bold;
+      text-align: center;
+      text-shadow:
+        -2px -2px 0 #000,
+        2px -2px 0 #000,
+        -2px 2px 0 #000,
+        2px 2px 0 #000;
+    }
+
+    #bonus-alert {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 8px 14px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: #f1c40f;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      border: 1px solid rgba(241, 196, 15, 0.7);
+      display: none;
+      z-index: 2001;
+      pointer-events: none;
+      text-shadow: 1px 1px 2px #000;
+    }
+
   </style>
 </head>
 <body>
@@ -621,6 +676,13 @@
         <p class="gauge-value" id="alignement-value">0</p>
       </div>
     </div>
+
+    <!-- Overlays pour les bonus/pièges -->
+    <div id="bonus-overlay">
+      <img id="bonus-overlay-image" src="" alt="Bonus" />
+      <div id="bonus-overlay-text"></div>
+    </div>
+    <div id="bonus-alert"></div>
     
     <!-- Croix directionnelle en X -->
     <div id="dpad-container">
@@ -712,6 +774,16 @@
       { nom: "Pie", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 1, vsFeu: 0, vsSablier: 1, vsVent: 0, vsAcanthe: 0, vsPie: 2, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721058/card000006_hpmmzl.png" },
       { nom: "Joker", vsPierre: 1, vsFeuille: 1, vsCiseaux: 1, vsPuits: 1, vsFeu: 1, vsSablier: 1, vsVent: 1, vsAcanthe: 1, vsPie: 1, vsJoker: 1, occurrence: 17, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721516/card000009_bqra6a.png" }
     ];
+
+    const bonusCardNames = ["Puits", "Feu", "Sablier", "Vent", "Acanthe", "Pie", "Joker"];
+
+    function getRandomBonusCard() {
+      const pool = cardsDatabase.filter(c => bonusCardNames.includes(c.nom));
+      if (pool.length === 0) return null;
+      const index = Math.floor(Math.random() * pool.length);
+      return pool[index];
+    }
+
     
     // État du mini-jeu
     let gameState = {
@@ -1681,6 +1753,12 @@
       if (index < gameState.mainJoueur.length) {
         gameState.carteJoueeJoueur = gameState.mainJoueur[index];
         gameState.mainJoueur.splice(index, 1);
+        // Si cette carte provient de l'inventaire (bonus collectés), on la retire définitivement de l'inventaire
+        const invIndex = cartesCollectees.indexOf(gameState.carteJoueeJoueur);
+        if (invIndex !== -1) {
+          cartesCollectees.splice(invIndex, 1);
+        }
+
         afficherCartes();
         
         gameState.waitingForPlayerAction = false;
@@ -1988,6 +2066,55 @@
         }, 300);
       }, 2000);
     }
+
+
+    function showTrapOverlay() {
+      const overlay = document.getElementById('bonus-overlay');
+      const img = document.getElementById('bonus-overlay-image');
+      const text = document.getElementById('bonus-overlay-text');
+      const alert = document.getElementById('bonus-alert');
+
+      // Piège : pas d’image de carte, juste un gros texte
+      img.style.display = 'none';
+      text.textContent = 'PIÈGE !';
+      text.style.display = 'block';
+
+      overlay.style.display = 'flex';
+
+      alert.textContent = "3 Heures d'Enquête retirées !";
+      alert.style.display = 'block';
+    }
+
+    function showCardOverlay(card) {
+      const overlay = document.getElementById('bonus-overlay');
+      const img = document.getElementById('bonus-overlay-image');
+      const text = document.getElementById('bonus-overlay-text');
+      const alert = document.getElementById('bonus-alert');
+
+      // Carte bonus : on affiche l’image
+      text.style.display = 'none';
+      img.src = card.img;
+      img.style.display = 'block';
+
+      overlay.style.display = 'flex';
+
+      alert.textContent = `Carte obtenue : ${card.nom}`;
+      alert.style.display = 'block';
+    }
+
+    function hideBonusOverlay() {
+      const overlay = document.getElementById('bonus-overlay');
+      const img = document.getElementById('bonus-overlay-image');
+      const text = document.getElementById('bonus-overlay-text');
+      const alert = document.getElementById('bonus-alert');
+
+      overlay.style.display = 'none';
+      img.style.display = 'none';
+      text.style.display = 'none';
+      alert.style.display = 'none';
+    }
+
+
     
     function calculateAccessibleCells(fromRow, fromCol, range) {
       // Calculer les cases accessibles depuis une position donnée avec un range
@@ -2041,7 +2168,13 @@
       
       return accessible;
     }
-    
+
+
+    function getBonusAt(row, col) {
+      return bonusItems.find(b => b.userData.row === row && b.userData.col === col) || null;
+    }
+
+
     function highlightAccessibleCells() {
       // Retirer la surbrillance de toutes les cases
       clearHighlights();
@@ -2090,10 +2223,11 @@
       console.log("Déplacez-vous dans les cases surlignées, puis appuyez sur la flamme");
     }
     
+
     function endPlayerTurn() {
       isPlayerTurn = false;
       clearHighlights();
-      
+
       // Calculer la distance parcourue pendant ce tour
       if (redPion) {
         const distanceTraveled = Math.abs(redPion.userData.row - startTurnPosition.row) + 
@@ -2113,21 +2247,126 @@
           return;
         }
       }
-      
-      console.log("Tour de l'adversaire");
-      
-      // Vérifier s'il y a un pion adverse adjacent au pion rouge
-      if (isEnemyAdjacentToRedPion()) {
-        // Déclencher la phase de confrontation
-        openConfrontation();
-      } else {
-        // Continuer directement le tour de l'adversaire
+
+      // Après le déplacement, on gère d'abord un éventuel bonus sur la case
+      processEndOfTurnBonusAndConfrontation();
+    }
+
+
+    function processEndOfTurnBonusAndConfrontation() {
+      if (!redPion) {
+        // sécurité
         setTimeout(() => {
           aiTurn();
         }, 500);
+        return;
+      }
+
+      const currentRow = redPion.userData.row;
+      const currentCol = redPion.userData.col;
+
+      const bonus = getBonusAt(currentRow, currentCol);
+      const hasEnemyAdjacent = isEnemyAdjacentToRedPion();
+
+      if (bonus) {
+        collectBonus(bonus, hasEnemyAdjacent);
+      } else {
+        // Pas de bonus : on retrouve le comportement précédent
+        if (hasEnemyAdjacent) {
+          console.log("Pion adverse adjacent détecté - Confrontation immédiate");
+          openConfrontation();
+        } else {
+          console.log("Tour de l'adversaire");
+          setTimeout(() => {
+            aiTurn();
+          }, 500);
+        }
       }
     }
-    
+
+
+    function collectBonus(bonus, hasEnemyAdjacent) {
+      // A) retirer définitivement le bonus
+      const index = bonusItems.indexOf(bonus);
+      if (index !== -1) {
+        bonusItems.splice(index, 1);
+      }
+      checkerboard.remove(bonus);
+
+      // Piège ou bonus ?
+      const isTrap = !!bonus.userData.isTrap;
+
+      if (isTrap) {
+        // C-a) Piège
+        console.log("Bonus : PIÈGE !");
+
+        // Retirer 3 heures d'enquête
+        heuresEnquete -= 3;
+        if (heuresEnquete < 0) heuresEnquete = 0;
+        updateGaugesDisplay();
+
+        showTrapOverlay();
+
+        // Après < 2s, on masque et on enchaîne
+        setTimeout(() => {
+          hideBonusOverlay();
+
+          // Si plus d'heures après le piège -> Game Over
+          if (heuresEnquete <= 0) {
+            gameOver();
+            return;
+          }
+
+          if (hasEnemyAdjacent) {
+            console.log("Confrontation retardée après piège");
+            openConfrontation();
+          } else {
+            console.log("Tour de l'adversaire après piège");
+            setTimeout(() => {
+              aiTurn();
+            }, 500);
+          }
+        }, 1800);
+
+      } else {
+        // C-b) Bonus de carte
+        const card = getRandomBonusCard();
+        if (!card) {
+          console.warn("Aucune carte bonus disponible");
+          if (hasEnemyAdjacent) {
+            openConfrontation();
+          } else {
+            setTimeout(() => {
+              aiTurn();
+            }, 500);
+          }
+          return;
+        }
+
+        console.log(`Bonus : carte obtenue -> ${card.nom}`);
+
+        // Ajouter la carte à l'inventaire du joueur pour cette partie
+        cartesCollectees.push(card);
+
+        showCardOverlay(card);
+
+        setTimeout(() => {
+          hideBonusOverlay();
+
+          if (hasEnemyAdjacent) {
+            console.log("Confrontation retardée après obtention de carte bonus");
+            openConfrontation();
+          } else {
+            console.log("Tour de l'adversaire après obtention de carte bonus");
+            setTimeout(() => {
+              aiTurn();
+            }, 500);
+          }
+        }, 1800);
+      }
+    }
+
+
     function gameOver() {
       console.log("=== VOUS AVEZ PERDU ===");
       console.log("Vos Heures d'Enquête sont épuisées!");
@@ -2600,6 +2839,30 @@
         occupiedBonusPositions.add(key);
       }
 
+      // Marquer tous les bonus par défaut comme non-pièges
+      bonusItems.forEach(b => {
+        b.userData.isTrap = false;
+      });
+
+      // Choisir au hasard 4 bonus (ou moins si < 4) pour devenir des pièges
+      if (bonusItems.length > 0) {
+        const indices = bonusItems.map((_, i) => i);
+
+        // Mélange des indices (Fisher–Yates)
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+
+        const trapCount = Math.min(4, bonusItems.length);
+        for (let k = 0; k < trapCount; k++) {
+          const idx = indices[k];
+          bonusItems[idx].userData.isTrap = true;
+        }
+
+        console.log(`Pièges assignés : ${trapCount}`);
+      }
+
       console.log(`Bonus placés : ${bonusItems.length}`);
     }
 
@@ -2758,6 +3021,7 @@
       pointsAlignement = 0;
       confrontationCount = 0;
       currentRotationStep = 0;
+      cartesCollectees = []; // <-- ici
       
       console.log("=== JEU RÉINITIALISÉ ===");
       console.log(`Heures d'Enquête: ${heuresEnquete}`);

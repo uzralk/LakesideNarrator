@@ -666,6 +666,8 @@
       { color: '#00ff00', count: 5 },  // 5 pions verts
       { color: '#9900ff', count: 3 }   // 3 pions violets
     ];
+
+
     let roadPositions = []; // Liste des positions de routes (cases gris clair)
     let cityMap = []; // Carte de la ville
     let squareMeshes = {}; // Dictionnaire pour accéder aux meshes des cases
@@ -686,19 +688,21 @@
     
     // Inventaire de cartes collectées
     let cartesCollectees = []; // Inventaire global du joueur
+
+    let detectiveTexture = null;
     
     // Base de données des cartes
     const cardsDatabase = [
       { nom: "Pierre", vsPierre: 2, vsFeuille: 0, vsCiseaux: 1, vsPuits: 0, vsFeu: 1, vsSablier: 0, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 1, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764512932/card000002_fqmuqv.png" },
       { nom: "Feuille", vsPierre: 1, vsFeuille: 2, vsCiseaux: 0, vsPuits: 1, vsFeu: 0, vsSablier: 0, vsVent: 0, vsAcanthe: 0, vsPie: 1, vsJoker: 0, occurrence: 1, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764512932/card000003_wmqjnf.png" },
       { nom: "Ciseaux", vsPierre: 0, vsFeuille: 1, vsCiseaux: 2, vsPuits: 0, vsFeu: 0, vsSablier: 0, vsVent: 0, vsAcanthe: 1, vsPie: 0, vsJoker: 0, occurrence: 1, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764512933/card000004_jvc95e.png" },
-      { nom: "Puits", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 2, vsFeu: 1, vsSablier: 0, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 3, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
-      { nom: "Feu", vsPierre: 0, vsFeuille: 1, vsCiseaux: 1, vsPuits: 0, vsFeu: 2, vsSablier: 0, vsVent: 1, vsAcanthe: 1, vsPie: 1, vsJoker: 0, occurrence: 5, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
-      { nom: "Sablier", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 0, vsFeu: 0, vsSablier: 2, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 7, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
-      { nom: "Vent", vsPierre: 0, vsFeuille: 1, vsCiseaux: 1, vsPuits: 0, vsFeu: 0, vsSablier: 0, vsVent: 2, vsAcanthe: 1, vsPie: 1, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
-      { nom: "Acanthe", vsPierre: 1, vsFeuille: 1, vsCiseaux: 0, vsPuits: 1, vsFeu: 0, vsSablier: 0, vsVent: 0, vsAcanthe: 2, vsPie: 1, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
-      { nom: "Pie", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 1, vsFeu: 0, vsSablier: 1, vsVent: 0, vsAcanthe: 0, vsPie: 2, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" },
-      { nom: "Joker", vsPierre: 1, vsFeuille: 1, vsCiseaux: 1, vsPuits: 1, vsFeu: 1, vsSablier: 1, vsVent: 1, vsAcanthe: 1, vsPie: 1, vsJoker: 1, occurrence: 17, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764453807/card000001_qqnqyi.jpg" }
+      { nom: "Puits", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 2, vsFeu: 1, vsSablier: 0, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 3, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721025/card000005_vwvcpu.png" },
+      { nom: "Feu", vsPierre: 0, vsFeuille: 1, vsCiseaux: 1, vsPuits: 0, vsFeu: 2, vsSablier: 0, vsVent: 1, vsAcanthe: 1, vsPie: 1, vsJoker: 0, occurrence: 5, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721851/card000010_fbjlwy.png" },
+      { nom: "Sablier", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 0, vsFeu: 0, vsSablier: 2, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 7, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721376/card000007_esqtsq.png" },
+      { nom: "Vent", vsPierre: 0, vsFeuille: 1, vsCiseaux: 1, vsPuits: 0, vsFeu: 0, vsSablier: 0, vsVent: 2, vsAcanthe: 1, vsPie: 1, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764722011/card0000011_jsd1m7.png" },
+      { nom: "Acanthe", vsPierre: 1, vsFeuille: 1, vsCiseaux: 0, vsPuits: 1, vsFeu: 0, vsSablier: 0, vsVent: 0, vsAcanthe: 2, vsPie: 1, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721732/card000008_orvnrp.png" },
+      { nom: "Pie", vsPierre: 1, vsFeuille: 0, vsCiseaux: 1, vsPuits: 1, vsFeu: 0, vsSablier: 1, vsVent: 0, vsAcanthe: 0, vsPie: 2, vsJoker: 0, occurrence: 10, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721058/card000006_hpmmzl.png" },
+      { nom: "Joker", vsPierre: 1, vsFeuille: 1, vsCiseaux: 1, vsPuits: 1, vsFeu: 1, vsSablier: 1, vsVent: 1, vsAcanthe: 1, vsPie: 1, vsJoker: 1, occurrence: 17, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764721516/card000009_bqra6a.png" }
     ];
     
     // État du mini-jeu
@@ -743,7 +747,8 @@
         ]
       }
     };
-    
+ 
+
     function init() {
       // Créer la scène
       scene = new THREE.Scene();
@@ -764,6 +769,21 @@
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(600, 600);
       container.insertBefore(renderer.domElement, container.firstChild);
+
+
+      // === Charger la sprite-sheet du détective ===
+      const textureLoader = new THREE.TextureLoader();
+      detectiveTexture = textureLoader.load('https://res.cloudinary.com/dgrcmakbt/image/upload/v1764722295/detective001_ioa12y.png', (tex) => {
+        // Pixel-art net
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+
+        // On choisit une pose par défaut (ex : 3/4 face sud-est)
+        setDetectiveFrame('SE');
+      });
+
       
       // Créer la skysphere
       createSkysphere();
@@ -829,25 +849,27 @@
           }
         }
       }
-      
-      // Rotation initiale à +45° pour présenter un coin face caméra
-      checkerboard.rotation.y = Math.PI / 4; // 45 degrés
+
+      // Rotation initiale du damier à 45° pour la vue en diagonale
+      checkerboard.rotation.y = Math.PI / 4;
       targetRotation = checkerboard.rotation.y;
       
       scene.add(checkerboard);
-      
-      // Créer tous les pions
+
+      // Créer tous les pions (dont le détective)
       createAllPions();
-      
+
       // Démarrer le tour du joueur
       startPlayerTurn();
-      
+
       // Mettre à jour l'affichage des jauges
       updateGaugesDisplay();
-      
+
+      // Lancer la boucle de rendu
       animate();
     }
     
+
     function createSkysphere() {
       // Créer une sphère inversée (texture à l'intérieur)
       const geometry = new THREE.SphereGeometry(100, 64, 64);
@@ -871,6 +893,42 @@
       
       scene.add(skysphere);
     }
+
+
+    function setDetectiveFrame(direction) {
+      if (!detectiveTexture) return;
+
+      // Sprite-sheet 2x2 : chaque frame occupe 1/2 de la largeur et 1/2 de la hauteur
+      const frameW = 0.5;
+      const frameH = 0.5;
+
+      detectiveTexture.repeat.set(frameW, frameH);
+
+      // Attention : en UV, y = 0 est en bas de l'image
+      // On suppose le layout suivant :
+      //  haut-gauche : NE (3/4 dos nord-est)
+      //  haut-droite : NW (3/4 dos nord-ouest)
+      //  bas-gauche : SE (3/4 face sud-est)
+      //  bas-droite : SW (3/4 face sud-ouest)
+
+      switch (direction) {
+        case 'NE': // haut-gauche
+          detectiveTexture.offset.set(0.0, 0.5);
+          break;
+        case 'NW': // haut-droite
+          detectiveTexture.offset.set(0.5, 0.5);
+          break;
+        case 'SE': // bas-gauche
+          detectiveTexture.offset.set(0.0, 0.0);
+          break;
+        case 'SW': // bas-droite
+          detectiveTexture.offset.set(0.5, 0.0);
+          break;
+      }
+
+      detectiveTexture.needsUpdate = true;
+    }
+
     
     function generateCityMap() {
       // Créer une grille initiale remplie de bâtiments (false)
@@ -1548,7 +1606,10 @@
             afficherIndicateurZone('player-hand');
           }, 500);
           
-          console.log("Choisissez une carte à jouer");
+           // Message d'instruction
+          setTimeout(() => {
+            dialogueText.textContent = "Choisissez une carte à jouer";
+          }, 500);         // console.log("Choisissez une carte à jouer");
         } else {
           // Continuer à tirer
           console.log(`Cliquez sur le deck pour tirer vos cartes (${nbCartes + 1}/3)`);
@@ -2287,6 +2348,7 @@
         .toString(16).slice(1);
     }
     
+
     function createAllPions() {
       // Supprimer tous les anciens pions
       pions.forEach(p => checkerboard.remove(p));
@@ -2321,23 +2383,34 @@
           
           occupiedPositions.add(posKey);
           
-          // Créer le pion
-          const texture = createPionTexture(type.color);
-          const material = new THREE.SpriteMaterial({ 
-            map: texture,
-            transparent: true
-          });
+          // === Choix du matériau ===
+          let material;
+
+          // Le tout premier pion du premier type (ex-pion rouge) devient le détective
+          if (typeIndex === 0 && i === 0 && detectiveTexture) {
+            material = new THREE.SpriteMaterial({
+              map: detectiveTexture,
+              transparent: true
+            });
+          } else {
+            // Tous les autres pions : pions ronds classiques
+            const texture = createPionTexture(type.color);
+            material = new THREE.SpriteMaterial({ 
+              map: texture,
+              transparent: true
+            });
+          }
+
           
+          // Créer le pion (sprite)
           const pion = new THREE.Sprite(material);
           const pionScale = isZoomed ? squareSize * 2 : squareSize * 0.8;
           const pionHeight = isZoomed ? squareSize * 2.5 : squareSize * 1.1;
           pion.scale.set(pionScale, pionHeight, 1);
           
           // Positionner le pion sur la case
-          // Le centre du bas de l'image doit être au centre de la case
           const x = (position.col - (boardSize - 1) / 2) * squareSize;
           const z = (position.row - (boardSize - 1) / 2) * squareSize;
-          // Décalage vertical : la moitié de la hauteur du sprite pour que le bas soit sur la case
           pion.position.set(x, pionHeight / 2, z);
           
           // Stocker les coordonnées du pion et sa position de base
@@ -2351,13 +2424,14 @@
           checkerboard.add(pion);
           pions.push(pion);
           
-          // Garder une référence au pion rouge (premier pion du premier type)
+          // Garder une référence au pion rouge (qui est désormais le détective)
           if (typeIndex === 0 && i === 0) {
             redPion = pion;
           }
         }
       });
     }
+
     
     function animate() {
       requestAnimationFrame(animate);

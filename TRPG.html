@@ -650,7 +650,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    let scene, camera, renderer, checkerboard;
+    let scene, camera, renderer, checkerboard, skysphere;
+    let bonusItems = [];
     let pions = []; // Tableau pour stocker tous les pions
     let redPion = null; // Référence au pion rouge
     let isRotating = false;
@@ -690,7 +691,14 @@
     let cartesCollectees = []; // Inventaire global du joueur
 
     let detectiveTexture = null;
-    
+
+    // Animation "idle" du détective (4 frames sur la sprite-sheet 2x2)
+    let detectiveFrameIndex = 0;
+    let lastDetectiveFrameTime = 0;
+    const detectiveFrameDuration = 200; // durée d'une frame en ms (~5 fps)
+    const detectiveIdleSequence = ['SE', 'SW', 'NE', 'NW']; 
+
+
     // Base de données des cartes
     const cardsDatabase = [
       { nom: "Pierre", vsPierre: 2, vsFeuille: 0, vsCiseaux: 1, vsPuits: 0, vsFeu: 1, vsSablier: 0, vsVent: 1, vsAcanthe: 0, vsPie: 0, vsJoker: 0, occurrence: 1, img: "https://res.cloudinary.com/dgrcmakbt/image/upload/v1764512932/card000002_fqmuqv.png" },
@@ -862,6 +870,9 @@
       // Démarrer le tour du joueur
       startPlayerTurn();
 
+      // Placer les bonus collectables après les pions
+      createAllBonuses();
+
       // Mettre à jour l'affichage des jauges
       updateGaugesDisplay();
 
@@ -929,7 +940,23 @@
       detectiveTexture.needsUpdate = true;
     }
 
-    
+
+    function updateDetectiveAnimation(time) {
+      if (!detectiveTexture) return;
+
+      if (time === undefined) time = 0;
+
+      // passer à la frame suivante ?
+      if (time - lastDetectiveFrameTime > detectiveFrameDuration) {
+        lastDetectiveFrameTime = time;
+        detectiveFrameIndex = (detectiveFrameIndex + 1) % detectiveIdleSequence.length;
+
+        const dir = detectiveIdleSequence[detectiveFrameIndex];
+        setDetectiveFrame(dir);  // réutilise ta logique NE / NW / SE / SW
+      }
+    }
+
+
     function generateCityMap() {
       // Créer une grille initiale remplie de bâtiments (false)
       const map = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
@@ -1266,6 +1293,33 @@
       return geometry;
     }
     
+
+    function getRoadExtremities() {
+      const extremities = [];
+
+      for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+          if (!cityMap[row][col]) continue; // pas une route
+
+          let neighbors = 0;
+
+          if (row > 0 && cityMap[row - 1][col]) neighbors++;
+          if (row < boardSize - 1 && cityMap[row + 1][col]) neighbors++;
+          if (col > 0 && cityMap[row][col - 1]) neighbors++;
+          if (col < boardSize - 1 && cityMap[row][col + 1]) neighbors++;
+
+          // une seule route voisine => extrémité (cul-de-sac)
+          if (neighbors === 1) {
+            extremities.push({ row, col });
+          }
+        }
+      }
+
+      return extremities;
+    }
+
+
+
     function updateGaugesDisplay() {
       // Mettre à jour l'affichage des jauges
       document.getElementById('heures-value').textContent = heuresEnquete;
@@ -1608,7 +1662,8 @@
           
            // Message d'instruction
           setTimeout(() => {
-            dialogueText.textContent = "Choisissez une carte à jouer";
+            const dialogueText = document.getElementById('dialogue-text');
+            dialogueText.textContent = "Choisissez l'une de vos trois cartes pour attaquer";
           }, 500);         // console.log("Choisissez une carte à jouer");
         } else {
           // Continuer à tirer
@@ -2335,7 +2390,42 @@
       
       return new THREE.CanvasTexture(canvas);
     }
-    
+
+
+    function createBonusTexture(color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Petit paquet rectangulaire
+      const x = 24;
+      const y = 40;
+      const w = 80;
+      const h = 48;
+
+      // Corps du paquet
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+
+      // Bordure un peu plus sombre
+      ctx.strokeStyle = '#cc6600';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x, y, w, h);
+
+      // Ruban vertical
+      ctx.fillStyle = '#ffcc66';
+      ctx.fillRect(x + w / 2 - 4, y, 8, h);
+
+      // Ruban horizontal
+      ctx.fillRect(x, y + h / 2 - 4, w, 8);
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+
     function shadeColor(color, percent) {
       // Fonction pour assombrir une couleur
       const num = parseInt(color.replace("#",""), 16);
@@ -2432,10 +2522,95 @@
       });
     }
 
-    
-    function animate() {
+
+    function createAllBonuses() {
+      // Supprimer les anciens bonus (si existants)
+      bonusItems.forEach(b => checkerboard.remove(b));
+      bonusItems = [];
+
+      if (!redPion) return;
+      if (!roadPositions || roadPositions.length === 0) return;
+
+      const bonusCount = 9;
+
+      // Case du détective à éviter
+      const redKey = `${redPion.userData.row}-${redPion.userData.col}`;
+
+      // Repérer les extrémités de routes
+      const extremities = getRoadExtremities();
+      const extremitySet = new Set(extremities.map(c => `${c.row}-${c.col}`));
+
+      // Construire une liste pondérée de cases routes (extrémités plus fréquentes)
+      const weightedCells = [];
+      roadPositions.forEach(cell => {
+        const key = `${cell.row}-${cell.col}`;
+        if (key === redKey) return; // pas de bonus sous le détective
+
+        const weight = extremitySet.has(key) ? 4 : 1; // extrémités 4x plus probables
+        for (let i = 0; i < weight; i++) {
+          weightedCells.push(cell);
+        }
+      });
+
+      if (weightedCells.length === 0) return;
+
+      // Nombre maximum de cases uniques possibles
+      const uniqueKeys = new Set(weightedCells.map(c => `${c.row}-${c.col}`));
+      const maxPossible = uniqueKeys.size;
+      const finalBonusCount = Math.min(bonusCount, maxPossible);
+
+      const occupiedBonusPositions = new Set();
+      const bonusTexture = createBonusTexture('#ff8800');
+
+      let attempts = 0;
+      while (bonusItems.length < finalBonusCount && attempts < 2000 && weightedCells.length > 0) {
+        attempts++;
+        const index = Math.floor(Math.random() * weightedCells.length);
+        const cell = weightedCells[index];
+        const key = `${cell.row}-${cell.col}`;
+
+        if (occupiedBonusPositions.has(key)) continue;
+
+        // Créer le sprite du bonus
+        const material = new THREE.SpriteMaterial({
+          map: bonusTexture,
+          transparent: true
+        });
+
+        const bonus = new THREE.Sprite(material);
+
+        // Plus petit que les pions
+        const bonusScale = squareSize * 0.5;
+        const bonusHeight = squareSize * 0.6;
+        bonus.scale.set(bonusScale, bonusHeight, 1);
+
+        const x = (cell.col - (boardSize - 1) / 2) * squareSize;
+        const z = (cell.row - (boardSize - 1) / 2) * squareSize;
+
+        // On le pose comme les pions (ancré au sol)
+        bonus.position.set(x, bonusHeight / 2, z);
+
+        bonus.userData = {
+          row: cell.row,
+          col: cell.col
+        };
+
+        checkerboard.add(bonus);
+        bonusItems.push(bonus);
+        occupiedBonusPositions.add(key);
+      }
+
+      console.log(`Bonus placés : ${bonusItems.length}`);
+    }
+
+
+    function animate(time) {
+      // time est fourni automatiquement par requestAnimationFrame
       requestAnimationFrame(animate);
-      
+
+      // Met à jour l'animation du détective (idle)
+      updateDetectiveAnimation(time || 0);
+
       // Animation de rotation progressive
       if (isRotating) {
         const diff = targetRotation - checkerboard.rotation.y;
@@ -2522,6 +2697,7 @@
       
       renderer.render(scene, camera);
     }
+
     
     // Gestionnaires des boutons Rotate
     document.getElementById('rotateRightBtn').addEventListener('click', function() {
@@ -2655,7 +2831,10 @@
       
       // Créer les nouveaux pions
       createAllPions();
-      
+ 
+      // Placer les bonus collectables
+      createAllBonuses();
+
       // Réinitialiser le zoom si on était zoomé
       if (isZoomed) {
         isZoomed = false;
